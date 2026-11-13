@@ -7,7 +7,7 @@ assert(strcmpi(extension,'.lac'),'pac:Output','Encoded output must use the .lac 
 assert(cfg.targetKbps*1000==round(cfg.targetKbps*1000),'pac:Config','Bitrate must be integer bits/s.');
 [x,fs]=pac.read_input(inputPath);
 X=pac.analyze(x); bands=pac.bands();
-[allowance,~,~]=pac.pam(X,cfg,bands);
+[allowance,~,pamDetails]=pac.pam(X,cfg,bands);
 F=size(X,2); B=numel(bands.count);
 [headerBytes,frameBytes]=pac.layout(numel(x),F,B,cfg.targetKbps);
 fid=fopen(outputPath,'w','ieee-le');
@@ -33,7 +33,7 @@ end
 totalBytes=ftell(fid);
 assert(totalBytes==headerBytes+sum(frameBytes),'pac:Budget','File size mismatch.');
 clear guard
-stats=struct('input',char(inputPath),'output',char(outputPath),'model','baseline', ...
+stats=struct('input',char(inputPath),'output',char(outputPath),'model',pac.model_name(cfg), ...
     'targetKbps',cfg.targetKbps,'actualKbps',8*totalBytes/(numel(x)/fs)/1000, ...
     'totalBytes',totalBytes,'headerBytes',headerBytes,'frameSideBits',sum(side), ...
     'coefficientBits',sum(coefficientBits),'paddingBits',sum(8*frameBytes)-sum(used), ...
@@ -41,6 +41,6 @@ stats=struct('input',char(inputPath),'output',char(outputPath),'model','baseline
     'sampleCount',numel(x),'frames',F,'bands',B, ...
     'bandsOverThreshold',sum(violations),'config',cfg);
 pac.write_json([char(outputPath) '.json'],stats);
-save([char(outputPath) '.diagnostics.mat'],'widths','allowance','violations','frameBytes');
+save([char(outputPath) '.diagnostics.mat'],'widths','allowance','violations','frameBytes','pamDetails');
 fprintf('Encoded %s: %.3f kb/s, %d bytes\n',outputPath,stats.actualKbps,totalBytes);
 end

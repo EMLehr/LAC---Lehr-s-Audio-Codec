@@ -8,7 +8,7 @@ The baseline implements 48 kHz mono input, 2048-sample sine-window MDCT analysis
 
 Baseline stages 1–4 are implemented. Transform and bitstream tests run in MATLAB R2025b Update 1. Development outputs exist locally for harpsichord and castanets at 64, 96, and 128 kb/s. Speech is reserved for final quality testing after choosing PAM changes.
 
-All optional features are **off and not yet implemented**: tonal/noise classification, temporal masking, enhanced spreading, enhanced band-allowance mapping, Huffman coding, and SBR-inspired bandwidth extension. Their configuration switches are present; setting one to true raises an explicit error. No improvement is silently included in the baseline.
+All optional features default to **off**. Temporal masking is implemented, with separately controllable post-masking and pre-echo control. Tonal/noise classification, enhanced spreading, enhanced band-allowance mapping, Huffman coding, and SBR-inspired bandwidth extension remain unimplemented; enabling those switches raises an explicit error. No improvement is silently included in the baseline.
 
 ## Requirements
 
@@ -55,6 +55,33 @@ The output directory must exist. The encoder also accepts an already prepared 48
 
 After PAM choices are frozen, `stage4_encode_baseline(true)` includes speech. Decode as usual, then `stage4_evaluate_baseline(true)` includes it in measurements. Do not use this held-out quality result to tune parameters.
 
+## Temporal masking
+
+Enable it for an individual encode with:
+
+```matlab
+cfg = codec_config();
+cfg.features.temporalMasking = true;
+cfg.targetKbps = 96;
+stats = encode_audio('outputs/prepared/castanets.mat', ...
+    'outputs/castanets_temporal_96k.lac', cfg);
+```
+
+Setting the master toggle back to false restores the baseline. With it true, `cfg.pam.temporal.postMasking` and `cfg.pam.temporal.preEchoControl` independently enable its two components (both true by default). The standard decoder works without any new settings or metadata files. PAM choices are recorded in encoder JSON; the decoder does not need them.
+
+After stages 1 and 4 have created the baseline development files, run:
+
+```text
+matlab -batch "stage5_verify_temporal;"
+matlab -batch "stage5_temporal('encode');"
+matlab -batch "stage5_temporal('decode');"
+matlab -batch "stage5_temporal('evaluate');"
+```
+
+The encoding stage verifies that all-off outputs match existing baseline files byte for byte, then generates combined temporal, post-only, and pre-echo-only modes. All modes use the same rates, quantizer, allocator, and binary format. Decoding in the separate process reads `.lac` files only. The evaluation stage produces measurements and an input/baseline/temporal masking plot with corresponding band allocations. Speech remains held out.
+
+See [docs/TEMPORAL_MASKING.md](docs/TEMPORAL_MASKING.md) for the hypothesis, equations, state handling, parameter choices, and measured benefits/regressions. Initial measured gains mainly come from pre-echo control at 64/96 kb/s on castanets; listening is pending.
+
 ## Outputs
 
 | Location | Contents |
@@ -62,6 +89,7 @@ After PAM choices are frozen, `stage4_encode_baseline(true)` includes speech. De
 | `outputs/prepared/` | Prepared samples, float WAVs, source/preparation manifest |
 | `outputs/validation/` | Transform results, synthetic codec fixtures and verification results |
 | `outputs/baseline/` | Compressed `.lac`, reconstructed WAVs, per-file statistics/configuration, allocation diagnostics, measurement CSV/JSON, masking plot |
+| `outputs/temporal/` | Baseline byte-regression checks, three temporal configurations, matched-rate measurements, onset records, and comparison plot |
 
 Reconstructed WAVs use 32-bit IEEE float samples. This preserves playback levels and overshoots without clipping or normalizing them; the 768 kb/s compression reference is still **48 kHz mono 16-bit PCM**. The WAV writer's output is checked against MATLAB `audioread`.
 

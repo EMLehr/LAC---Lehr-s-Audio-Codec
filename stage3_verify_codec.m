@@ -73,6 +73,7 @@ end
 % Flags must not silently activate an absent implementation.
 base=codec_config(); names=fieldnames(base.features);
 for k=1:numel(names)
+    if strcmp(names{k},'temporalMasking'), continue; end
     cfg=codec_config(); cfg.features.(names{k})=true;
     mustFail(@() pac.validate_config(cfg),'pac:NotImplemented');
 end

@@ -1,6 +1,8 @@
-function [allowance,threshold,details] = pam(X,cfg,bands)
-%PAM Baseline MDCT-domain masking; all energies in squared MDCT units.
-% Approximate frame mean square is sum(X.^2)/N. No tonality/history state.
+function [allowance,threshold,details,state] = pam(X,cfg,bands,state)
+%PAM MDCT-domain masking with optional temporal history, in squared MDCT units.
+% Call on a complete chronological sequence, or pass fourth output into next call.
+% Omitting state starts an independent stream; the all-off path is unchanged.
+if nargin<4, state=[]; end
 N = cfg.hop;
 B = numel(bands.count);
 E = zeros(B,size(X,2));
@@ -17,6 +19,17 @@ end
 distance = bands.centers-bands.centers'; % target row minus masker column
 spreadDB = cfg.pam.lowerSlope*min(distance,0)+cfg.pam.upperSlope*max(distance,0);
 masked = 10.^(spreadDB/10)*E*10^(-cfg.pam.maskingOffsetDB/10);
+rawMasked = masked;
+temporal = [];
+if cfg.features.temporalMasking
+    quietBand=zeros(B,1);
+    for b=1:B
+        quietBand(b)=sum(ath(bands.edges(b):bands.edges(b+1)-1));
+    end
+    [masked,state,temporal]=pac.temporal_mask(masked,quietBand,cfg,state);
+else
+    state=[];
+end
 threshold = zeros(size(X));
 allowance = zeros(size(E));
 for b = 1:B
@@ -24,5 +37,6 @@ for b = 1:B
     threshold(idx,:) = max(ath(idx),masked(b,:)/bands.count(b));
     allowance(b,:) = sum(threshold(idx,:),1);
 end
-details = struct('bandEnergy',E,'ath',ath,'spreadingDB',spreadDB);
+details = struct('bandEnergy',E,'ath',ath,'spreadingDB',spreadDB, ...
+    'rawMasked',rawMasked,'masked',masked,'temporal',temporal);
 end
