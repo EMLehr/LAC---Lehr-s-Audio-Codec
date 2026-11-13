@@ -1,0 +1,14 @@
+# Supplied reference materials and original audio remain local.
+*.pdf
+*.pptx
+*.ppt
+*.wav
+*.mp3
+# Generated artifacts, encoded audio, and MATLAB scratch files.
+outputs/
+*.lac
+*.mat
+*.asv
+*.m~
+slprj/
+codegen/
