@@ -2,7 +2,7 @@
 
 ## Scope and hypothesis
 
-`cfg.features.temporalMasking = true` enables temporal processing of the baseline PAM's masking allowances. The all-off baseline is unchanged. The quantizer, allocation algorithm, MDCT dimensions, binary format, and decoder are unchanged too. Six re-encoded development files were verified byte-identical to the baseline produced before this feature (baseline commit `adb5832`).
+`cfg.features.temporalMasking = true` enables temporal processing of the baseline PAM's masking allowances. The all-off baseline is unchanged. The quantizer, allocation algorithm, MDCT dimensions, binary format, and decoder are unchanged too. Six re-encoded development files were verified byte-identical to the baseline produced before this feature.
 
 The working hypothesis is that limiting abrupt threshold increases will reduce some distortion before attacks, while a brief post-masking allowance can redistribute precision after loud events. Neither component is assumed to help universally at fixed rate. The fixed frame byte schedule has no reservoir: savings cannot move bits to other frames, only change allocation within a frame or become padding.
 

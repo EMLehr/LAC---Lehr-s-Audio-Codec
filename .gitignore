@@ -12,3 +12,5 @@ outputs/
 *.m~
 slprj/
 codegen/
+# Local agent instructions are not published.
+AGENTS.md

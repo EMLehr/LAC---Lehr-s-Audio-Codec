@@ -10,8 +10,15 @@ names = fieldnames(cfg.features);
 for k = 1:numel(names)
     value = cfg.features.(names{k});
     assert(islogical(value) && isscalar(value),'pac:Config','Feature flags must be logical scalars.');
-    assert(~value || strcmp(names{k},'temporalMasking'),'pac:NotImplemented', ...
+    assert(~value || ismember(names{k},{'temporalMasking','tonalMaskers'}),'pac:NotImplemented', ...
         'Optional feature %s is not implemented. Use false for baseline.',names{k});
+end
+if cfg.features.tonalMaskers
+    t=cfg.pam.tonal;
+    validateattributes(t.noiseFlatnessDB,{'double'},{'scalar','finite','<=',0});
+    validateattributes(t.toneFlatnessDB,{'double'},{'scalar','finite','<',t.noiseFlatnessDB});
+    validateattributes(t.noiseOffsetDB,{'double'},{'scalar','finite','>=',0,'<=',120});
+    validateattributes(t.toneOffsetDB,{'double'},{'scalar','finite','>=',t.noiseOffsetDB,'<=',120});
 end
 if cfg.features.temporalMasking
     t=cfg.pam.temporal;

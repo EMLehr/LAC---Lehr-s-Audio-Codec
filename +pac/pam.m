@@ -18,7 +18,16 @@ for b = 1:B
 end
 distance = bands.centers-bands.centers'; % target row minus masker column
 spreadDB = cfg.pam.lowerSlope*min(distance,0)+cfg.pam.upperSlope*max(distance,0);
-masked = 10.^(spreadDB/10)*E*10^(-cfg.pam.maskingOffsetDB/10);
+tonal=[];
+if cfg.features.tonalMaskers
+    [alpha,offsetDB,flatnessDB]=pac.tonality(X,bands,cfg.pam.tonal);
+    % Weight each SOURCE masker before spreading it into neighboring bands.
+    masked=10.^(spreadDB/10)*(E.*10.^(-offsetDB/10));
+    tonal=struct('alpha',alpha,'offsetDB',offsetDB,'flatnessDB',flatnessDB);
+else
+    % Preserve original operation order for byte-identical baseline output.
+    masked = 10.^(spreadDB/10)*E*10^(-cfg.pam.maskingOffsetDB/10);
+end
 rawMasked = masked;
 temporal = [];
 if cfg.features.temporalMasking
@@ -38,5 +47,5 @@ for b = 1:B
     allowance(b,:) = sum(threshold(idx,:),1);
 end
 details = struct('bandEnergy',E,'ath',ath,'spreadingDB',spreadDB, ...
-    'rawMasked',rawMasked,'masked',masked,'temporal',temporal);
+    'rawMasked',rawMasked,'masked',masked,'temporal',temporal,'tonal',tonal);
 end

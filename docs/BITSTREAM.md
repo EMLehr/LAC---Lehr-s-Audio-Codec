@@ -46,4 +46,4 @@ The decoder validates magic, version, flags, dimensions, sample/frame counts, ba
 
 Future Huffman or bandwidth-extension support must define its on-file semantics and decoder behavior explicitly, using versioning/flags. Existing version-1 files must remain decodable.
 
-Temporal masking is an encoder-only PAM option. It uses the same version-1 format and zero decoder feature flags. Its choices affect which coefficient integers and step sizes are stored, not how they are reconstructed. The encoder records the model and configuration in its optional JSON sidecar for experiments; that sidecar is never a decoding dependency.
+Temporal masking and tonal/noise classification are encoder-only PAM options. They use the same version-1 format and zero decoder feature flags. Their choices affect which coefficient integers and step sizes are stored, not how they are reconstructed. The encoder records the model and configuration in its optional JSON sidecar for experiments; that sidecar is never a decoding dependency.

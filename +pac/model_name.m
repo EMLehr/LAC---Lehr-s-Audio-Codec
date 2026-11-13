@@ -13,4 +13,7 @@ if cfg.features.temporalMasking
         name='temporal_bypass';
     end
 end
+if cfg.features.tonalMaskers
+    if strcmp(name,'baseline'), name='tonal'; else, name=['tonal_' name]; end
+end
 end

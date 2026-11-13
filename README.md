@@ -8,7 +8,7 @@ The baseline implements 48 kHz mono input, 2048-sample sine-window MDCT analysis
 
 Baseline stages 1–4 are implemented. Transform and bitstream tests run in MATLAB R2025b Update 1. Development outputs exist locally for harpsichord and castanets at 64, 96, and 128 kb/s. Speech is reserved for final quality testing after choosing PAM changes.
 
-All optional features default to **off**. Temporal masking is implemented, with separately controllable post-masking and pre-echo control. Tonal/noise classification, enhanced spreading, enhanced band-allowance mapping, Huffman coding, and SBR-inspired bandwidth extension remain unimplemented; enabling those switches raises an explicit error. No improvement is silently included in the baseline.
+All optional features default to **off**. Tonal/noise classification and temporal masking are implemented and can be combined. Temporal masking has separately controllable post-masking and pre-echo control. Enhanced spreading, enhanced band-allowance mapping, Huffman coding, and SBR-inspired bandwidth extension remain unimplemented; enabling those switches raises an explicit error. No improvement is silently included in the baseline.
 
 ## Requirements
 
@@ -82,6 +82,21 @@ The encoding stage verifies that all-off outputs match existing baseline files b
 
 See [docs/TEMPORAL_MASKING.md](docs/TEMPORAL_MASKING.md) for the hypothesis, equations, state handling, parameter choices, and measured benefits/regressions. Initial measured gains mainly come from pre-echo control at 64/96 kb/s on castanets; listening is pending.
 
+## Tonal/noise comparison stage
+
+Set `cfg.features.tonalMaskers = true` to enable spectral-flatness-based masker classification. It can run alone or with `cfg.features.temporalMasking = true`. The decoder is unchanged. The defaults remain all-off.
+
+After stage 4 and stage 5 development encoding, run separate processes:
+
+```text
+matlab -batch "stage6_verify_tonality;"
+matlab -batch "stage6_tonality('encode');"
+matlab -batch "stage6_tonality('decode');"
+matlab -batch "stage6_tonality('evaluate');"
+```
+
+This generates baseline, temporal-only, tonal-only, and combined configurations at all three rates for both development clips. It checks twelve existing baseline/temporal bitstreams for byte-identical output. Results are mixed, including pre-onset error regressions; see [docs/TONAL_MASKERS.md](docs/TONAL_MASKERS.md) for assumptions, measurements, and limitations. Speech remains held out.
+
 ## Outputs
 
 | Location | Contents |
@@ -90,6 +105,7 @@ See [docs/TEMPORAL_MASKING.md](docs/TEMPORAL_MASKING.md) for the hypothesis, equ
 | `outputs/validation/` | Transform results, synthetic codec fixtures and verification results |
 | `outputs/baseline/` | Compressed `.lac`, reconstructed WAVs, per-file statistics/configuration, allocation diagnostics, measurement CSV/JSON, masking plot |
 | `outputs/temporal/` | Baseline byte-regression checks, three temporal configurations, matched-rate measurements, onset records, and comparison plot |
+| `outputs/tonality/` | Four model combinations, regression checks, measurements, classifier scores, and masking/allocation plot |
 
 Reconstructed WAVs use 32-bit IEEE float samples. This preserves playback levels and overshoots without clipping or normalizing them; the 768 kb/s compression reference is still **48 kHz mono 16-bit PCM**. The WAV writer's output is checked against MATLAB `audioread`.
 
@@ -111,4 +127,4 @@ For a 10-second input the complete files are exactly 80,000, 120,000, and 160,00
 
 See [docs/BASELINE_RESULTS.md](docs/BASELINE_RESULTS.md) for measured development results. Listening observations have **not** been collected. SNR is not a perceptual quality score. Fixed long windows, broad quantization bands, uniform scalar quantization, direct bit packing, and a simplified PAM can cause substantial distortion, especially on transients. Improvements and final held-out evaluation remain future stages.
 
-Project decisions and development instructions are in [AGENTS.md](AGENTS.md).
+Implementation details and experiment records are in the `docs/` directory.
