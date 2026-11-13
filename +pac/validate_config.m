@@ -10,8 +10,18 @@ names = fieldnames(cfg.features);
 for k = 1:numel(names)
     value = cfg.features.(names{k});
     assert(islogical(value) && isscalar(value),'pac:Config','Feature flags must be logical scalars.');
-    assert(~value || ismember(names{k},{'temporalMasking','tonalMaskers'}),'pac:NotImplemented', ...
+    assert(~value || ismember(names{k},{'temporalMasking','tonalMaskers', ...
+        'enhancedSpreading','enhancedBandMapping'}),'pac:NotImplemented', ...
         'Optional feature %s is not implemented. Use false for baseline.',names{k});
+end
+if cfg.features.enhancedSpreading
+    t=cfg.pam.spreading;
+    validateattributes(t.lowerSlope,{'double'},{'scalar','finite','positive','<=',120});
+    validateattributes(t.minUpperMagnitude,{'double'},{'scalar','finite','positive'});
+    validateattributes(t.maxUpperMagnitude,{'double'}, ...
+        {'scalar','finite','>=',t.minUpperMagnitude,'<=',120});
+    validateattributes(t.minLevelDB,{'double'},{'scalar','finite'});
+    validateattributes(t.maxLevelDB,{'double'},{'scalar','finite','>',t.minLevelDB});
 end
 if cfg.features.tonalMaskers
     t=cfg.pam.tonal;

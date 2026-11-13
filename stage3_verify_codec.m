@@ -73,7 +73,8 @@ end
 % Flags must not silently activate an absent implementation.
 base=codec_config(); names=fieldnames(base.features);
 for k=1:numel(names)
-    if ismember(names{k},{'temporalMasking','tonalMaskers'}), continue; end
+    if ismember(names{k},{'temporalMasking','tonalMaskers', ...
+            'enhancedSpreading','enhancedBandMapping'}), continue; end
     cfg=codec_config(); cfg.features.(names{k})=true;
     mustFail(@() pac.validate_config(cfg),'pac:NotImplemented');
 end

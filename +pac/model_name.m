@@ -16,4 +16,10 @@ end
 if cfg.features.tonalMaskers
     if strcmp(name,'baseline'), name='tonal'; else, name=['tonal_' name]; end
 end
+if cfg.features.enhancedSpreading
+    if strcmp(name,'baseline'), name='spreading'; else, name=[name '_spreading']; end
+end
+if cfg.features.enhancedBandMapping
+    if strcmp(name,'baseline'), name='mapping'; else, name=[name '_mapping']; end
+end
 end

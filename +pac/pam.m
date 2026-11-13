@@ -19,6 +19,7 @@ end
 distance = bands.centers-bands.centers'; % target row minus masker column
 spreadDB = cfg.pam.lowerSlope*min(distance,0)+cfg.pam.upperSlope*max(distance,0);
 tonal=[];
+spreading=[];
 if cfg.features.tonalMaskers
     [alpha,offsetDB,flatnessDB]=pac.tonality(X,bands,cfg.pam.tonal);
     % Weight each SOURCE masker before spreading it into neighboring bands.
@@ -27,6 +28,14 @@ if cfg.features.tonalMaskers
 else
     % Preserve original operation order for byte-identical baseline output.
     masked = 10.^(spreadDB/10)*E*10^(-cfg.pam.maskingOffsetDB/10);
+end
+if cfg.features.enhancedSpreading
+    if cfg.features.tonalMaskers
+        weightedEnergy=E.*10.^(-offsetDB/10);
+    else
+        weightedEnergy=E*10^(-cfg.pam.maskingOffsetDB/10);
+    end
+    [masked,spreadDB,spreading]=pac.spread_maskers(E,weightedEnergy,bands,cfg);
 end
 rawMasked = masked;
 temporal = [];
@@ -40,12 +49,12 @@ else
     state=[];
 end
 threshold = zeros(size(X));
-allowance = zeros(size(E));
 for b = 1:B
     idx = bands.edges(b):bands.edges(b+1)-1;
     threshold(idx,:) = max(ath(idx),masked(b,:)/bands.count(b));
-    allowance(b,:) = sum(threshold(idx,:),1);
 end
+[allowance,baselineAllowance]=pac.map_allowances(threshold,bands,cfg.features.enhancedBandMapping);
 details = struct('bandEnergy',E,'ath',ath,'spreadingDB',spreadDB, ...
-    'rawMasked',rawMasked,'masked',masked,'temporal',temporal,'tonal',tonal);
+    'rawMasked',rawMasked,'masked',masked,'temporal',temporal,'tonal',tonal, ...
+    'spreading',spreading,'baselineAllowance',baselineAllowance);
 end
