@@ -17,6 +17,14 @@ All six optional features default to **off** and are independently selectable: f
 - The encoder/decoder and transform use base MATLAB. Audio Toolbox is not required.
 - Original test WAVs in the project root. References, originals, and generated artifacts are excluded from Git.
 
+## Listen and compare
+
+Run `listening_gui` in MATLAB to open the A/B listening window. Each side can be the prepared original or any codec configuration, with independent bitrate and feature controls. It supports all 64 six-switch combinations, plus temporal component variants. Missing versions are generated on demand and cached.
+
+Switch A/B at the same playback position, seek, loop a chosen region, adjust shared volume, and save listening notes with the exact configurations. Speech is labelled as the final-test excerpt and is only loaded when requested. See [docs/LISTENING_GUI.md](docs/LISTENING_GUI.md) for operation, playback levels, testing, and the local MATLAB audio-driver shutdown limitation.
+
+## Prepare the source audio
+
 Download the originals from the [QOA SQAM sample collection](https://qoaformat.org/samples/), following the [EBU usage terms](https://qc.ebu.io/testmaterials/523/):
 
 - [English female speech](https://qoaformat.org/samples/sqam/49_female_speech_english_mono.wav)
@@ -120,7 +128,7 @@ matlab -batch "stage7_pam_options('evaluate');"
 
 Stage 7 produces all 16 PAM combinations for both development excerpts at all three rates: 96 encoded/decoded pairs. It verifies 24 earlier configurations byte for byte. Synthetic checks cover all combinations, state continuity, mapping bounds, spreading behavior, and 48 exact codec round trips. The decoder and file format are unchanged.
 
-See [docs/FINAL_PAM_OPTIONS.md](docs/FINAL_PAM_OPTIONS.md) for equations, assumptions, results, and instructions. Mapping improves overall SNR substantially on harpsichord, but some configurations increase pre-onset error on castanets. All-on is not automatically best. Listening and final speech evaluation remain pending; no listening interface is included yet.
+See [docs/FINAL_PAM_OPTIONS.md](docs/FINAL_PAM_OPTIONS.md) for equations, assumptions, results, and instructions. Mapping improves overall SNR substantially on harpsichord, but some configurations increase pre-onset error on castanets. All-on is not automatically best. The listening GUI is available; human observations and final speech evaluation remain pending.
 
 ## Optional Huffman coding and bandwidth extension
 
@@ -158,6 +166,7 @@ Stage 8 compares neither tool, Huffman only, BWE only, and both, with baseline P
 | `outputs/tonality/` | Four model combinations, regression checks, measurements, classifier scores, and masking/allocation plot |
 | `outputs/pam_options/` | All 16 PAM combinations, 96 encoded/decoded pairs, regression checks, measurements, and global-curve/band-allowance/allocation plot |
 | `outputs/coding_features/` | Separate baseline-PAM/all-PAM comparisons of Huffman and BWE, 48 encoded/decoded pairs, byte regressions, measurements, and reconstructed-spectrum plot |
+| `outputs/listening/` | On-demand encoded/decoded comparison cache, saved listening notes, GUI verification, and preview |
 
 Reconstructed WAVs use 32-bit IEEE float samples. This preserves playback levels and overshoots without clipping or normalizing them; the 768 kb/s compression reference is still **48 kHz mono 16-bit PCM**. The WAV writer's output is checked against MATLAB `audioread`.
 

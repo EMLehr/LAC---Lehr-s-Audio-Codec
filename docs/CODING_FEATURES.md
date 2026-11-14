@@ -29,7 +29,7 @@ matlab -batch "stage8_coding_features('decode');"
 matlab -batch "stage8_coding_features('evaluate');"
 ```
 
-These actions are independently runnable. The comparison produces 48 encoded/decoded pairs in `outputs/coding_features/`, divided into `baseline_pam/` and `all_pam/`. Within each group, only the two coding switches vary. Each group covers neither, Huffman, BWE, and both at 64/96/128 kb/s for harpsichord and castanets. Speech remains held out. Full measurements, regression records, and decoding records are saved per group. `coding_comparison.png` shows original and reanalyzed decoded spectra for harpsichord frame 95 at 96 kb/s, with the 12 kHz boundary marked. No listening interface is included yet.
+These actions are independently runnable. The comparison produces 48 encoded/decoded pairs in `outputs/coding_features/`, divided into `baseline_pam/` and `all_pam/`. Within each group, only the two coding switches vary. Each group covers neither, Huffman, BWE, and both at 64/96/128 kb/s for harpsichord and castanets. Speech remains held out. Full measurements, regression records, and decoding records are saved per group. `coding_comparison.png` shows original and reanalyzed decoded spectra for harpsichord frame 95 at 96 kb/s, with the 12 kHz boundary marked. The [listening GUI](LISTENING_GUI.md) can now audition these configurations and generate additional combinations on demand.
 
 ## Huffman coding
 
