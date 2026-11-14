@@ -1,5 +1,5 @@
 function cfg = codec_config()
-%CODEC_CONFIG Reproducible all-off baseline; all four PAM options available.
+%CODEC_CONFIG All-off baseline; four PAM and two optional coding features.
 cfg.sampleRate = 48000;
 cfg.hop = 1024;
 cfg.windowLength = 2048;

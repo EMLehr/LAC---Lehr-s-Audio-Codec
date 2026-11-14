@@ -70,13 +70,11 @@ for signal=1:3
         if rowIndex==1, rows=row; else, rows(rowIndex)=row; end
     end
 end
-% Flags must not silently activate an absent implementation.
+% Every approved feature is implemented and accepts a logical true flag.
 base=codec_config(); names=fieldnames(base.features);
 for k=1:numel(names)
-    if ismember(names{k},{'temporalMasking','tonalMaskers', ...
-            'enhancedSpreading','enhancedBandMapping'}), continue; end
     cfg=codec_config(); cfg.features.(names{k})=true;
-    mustFail(@() pac.validate_config(cfg),'pac:NotImplemented');
+    pac.validate_config(cfg);
 end
 % Too-short inputs are supported by transform, but cannot fit fixed-rate headers.
 mustFail(@() pac.layout(1,2,B,64),'pac:Budget');
@@ -89,7 +87,7 @@ raw(7)=1;
 fid=fopen(bad,'w'); fwrite(fid,raw,'uint8'); fclose(fid);
 mustFail(@() decode_audio(bad),'pac:Format');
 report=struct('symbolWidthCases',15,'roundTrips',rows, ...
-    'silentPAM',true,'spreading',true,'rejectsUnavailableFeatures',true, ...
+    'silentPAM',true,'spreading',true,'acceptsImplementedFeatures',true, ...
     'rejectsTruncationAndUnknownFlags',true);
 pac.write_json(fullfile(out,'codec.json'),report);
 fprintf('PASS: 15 symbol widths, 9 file round trips, budgets, WAV fidelity, and format guards.\n');

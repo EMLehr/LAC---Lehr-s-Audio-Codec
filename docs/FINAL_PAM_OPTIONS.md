@@ -1,6 +1,6 @@
 # Final PAM options: spreading and band mapping
 
-The four approved PAM options are implemented, independently selectable, and default off. This stage adds `features.enhancedSpreading` and `features.enhancedBandMapping` to the existing tonal and temporal options. It preserves the baseline, quantizer, allocator, transform, byte budget, binary format, and decoder. Huffman coding and bandwidth extension are separate future codec features.
+The four approved PAM options are implemented, independently selectable, and default off. This stage adds `features.enhancedSpreading` and `features.enhancedBandMapping` to the existing tonal and temporal options. It preserves the baseline, quantizer, allocator, transform, byte budget, binary format, and decoder. Huffman coding and bandwidth extension are separate codec features, now implemented in [stage 8](CODING_FEATURES.md); they remain off throughout this PAM comparison.
 
 ## Hypotheses
 

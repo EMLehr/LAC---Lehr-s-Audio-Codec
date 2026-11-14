@@ -22,4 +22,10 @@ end
 if cfg.features.enhancedBandMapping
     if strcmp(name,'baseline'), name='mapping'; else, name=[name '_mapping']; end
 end
+if cfg.features.huffman
+    if strcmp(name,'baseline'), name='huffman'; else, name=[name '_huffman']; end
+end
+if cfg.features.bandwidthExtension
+    if strcmp(name,'baseline'), name='bwe'; else, name=[name '_bwe']; end
+end
 end

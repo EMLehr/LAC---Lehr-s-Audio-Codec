@@ -8,7 +8,7 @@ The baseline implements 48 kHz mono input, 2048-sample sine-window MDCT analysis
 
 Baseline stages 1–4 are implemented. Transform and bitstream tests run in MATLAB R2025b Update 1. Development outputs exist locally for harpsichord and castanets at 64, 96, and 128 kb/s. Speech is reserved for final quality testing after choosing PAM changes.
 
-All optional features default to **off**. All four PAM options are implemented and independently selectable: tonal/noise classification, temporal masking, enhanced spreading, and enhanced band-allowance mapping. Temporal masking has separately controllable post-masking and pre-echo control. Huffman coding and SBR-inspired bandwidth extension remain unimplemented; enabling those switches raises an explicit error. No improvement is silently included in the baseline.
+All six optional features default to **off** and are independently selectable: four PAM options (tonal/noise classification, temporal masking, enhanced spreading, enhanced band-allowance mapping), Huffman coding, and SBR-inspired bandwidth extension. Temporal masking has separately controllable post-masking and pre-echo control. No improvement is silently included in the baseline.
 
 ## Requirements
 
@@ -122,6 +122,31 @@ Stage 7 produces all 16 PAM combinations for both development excerpts at all th
 
 See [docs/FINAL_PAM_OPTIONS.md](docs/FINAL_PAM_OPTIONS.md) for equations, assumptions, results, and instructions. Mapping improves overall SNR substantially on harpsichord, but some configurations increase pre-onset error on castanets. All-on is not automatically best. Listening and final speech evaluation remain pending; no listening interface is included yet.
 
+## Optional Huffman coding and bandwidth extension
+
+```matlab
+cfg = codec_config();
+cfg.features.huffman = true;
+cfg.features.bandwidthExtension = true;
+```
+
+Either switch works alone or with any PAM configuration. Huffman coding losslessly stores quantized coefficient symbols using a fixed canonical category codebook and a per-band direct-packing fallback. Its exact bit costs enter allocation, so saved bits can buy precision within the fixed file budget. It does not make the entire audio codec lossless, and fixed-rate output files keep the same total size.
+
+Bandwidth extension directly codes the lower 12 kHz, then reconstructs the upper half from mirrored decoded coefficients with transmitted energy envelopes and noise fractions. This is a lossy SBR-inspired experiment, not standards-compliant SBR. The required 2048/1024 MDCT dimensions and 48 kHz output are preserved.
+
+Both options use explicit flags in version-2 `.lac` files. The decoder detects the format and supports both versions. With both switches off, the encoder still produces byte-identical version-1 output.
+
+After stage 7 encoding:
+
+```text
+matlab -batch "stage8_verify_coding;"
+matlab -batch "stage8_coding_features('encode');"
+matlab -batch "stage8_coding_features('decode');"
+matlab -batch "stage8_coding_features('evaluate');"
+```
+
+Stage 8 compares neither tool, Huffman only, BWE only, and both, with baseline PAM and all-four PAM settings in separate groups. This creates 48 development encoded/decoded pairs. Synthetic checks exercise all 64 combinations of the six switches. See [docs/CODING_FEATURES.md](docs/CODING_FEATURES.md) for design, measurements, and limitations, and [docs/BITSTREAM.md](docs/BITSTREAM.md) for decoding semantics. Speech and listening remain reserved for the final stage.
+
 ## Outputs
 
 | Location | Contents |
@@ -132,6 +157,7 @@ See [docs/FINAL_PAM_OPTIONS.md](docs/FINAL_PAM_OPTIONS.md) for equations, assump
 | `outputs/temporal/` | Baseline byte-regression checks, three temporal configurations, matched-rate measurements, onset records, and comparison plot |
 | `outputs/tonality/` | Four model combinations, regression checks, measurements, classifier scores, and masking/allocation plot |
 | `outputs/pam_options/` | All 16 PAM combinations, 96 encoded/decoded pairs, regression checks, measurements, and global-curve/band-allowance/allocation plot |
+| `outputs/coding_features/` | Separate baseline-PAM/all-PAM comparisons of Huffman and BWE, 48 encoded/decoded pairs, byte regressions, measurements, and reconstructed-spectrum plot |
 
 Reconstructed WAVs use 32-bit IEEE float samples. This preserves playback levels and overshoots without clipping or normalizing them; the 768 kb/s compression reference is still **48 kHz mono 16-bit PCM**. The WAV writer's output is checked against MATLAB `audioread`.
 
@@ -151,6 +177,6 @@ For a 10-second input the complete files are exactly 80,000, 120,000, and 160,00
 - Complete byte accounting, exact output length, float-WAV fidelity, silent PAM behavior, masking spread, unsupported-feature rejection, and malformed-file checks.
 - Six development outputs decoded in a separate MATLAB process using only compressed input files.
 
-See [docs/BASELINE_RESULTS.md](docs/BASELINE_RESULTS.md) for measured baseline results and the PAM documents above for optional configurations. Listening observations have **not** been collected. SNR is not a perceptual quality score. Fixed long windows, broad quantization bands, uniform scalar quantization, direct bit packing, and a simplified PAM can cause substantial distortion, especially on transients. Huffman coding, bandwidth extension, listening, and final held-out evaluation remain future stages.
+See [docs/BASELINE_RESULTS.md](docs/BASELINE_RESULTS.md) for measured baseline results and the feature documents above for optional configurations. Listening observations have **not** been collected. SNR is not a perceptual quality score. Fixed long windows, broad quantization bands, uniform scalar quantization, and a simplified PAM can cause substantial distortion, especially on transients. Bandwidth extension additionally changes high-frequency fine structure. Listening and final held-out evaluation remain future stages.
 
 Implementation details and experiment records are in the `docs/` directory.

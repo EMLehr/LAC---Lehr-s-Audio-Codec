@@ -18,10 +18,19 @@ for k=1:numel(ids)
             active=mean(xf.^2,1)>1e-8;
             seg=10*log10((sum(xf(:,active).^2,1)+eps)./(sum(ef(:,active).^2,1)+eps));
             diag=load([stem '.lac.diagnostics.mat'],'widths');
+            codingBands=pac.coding_bands(stats.config.features.bandwidthExtension);
+            expandedWidths=repelem(diag.widths,codingBands.count,1);
             if m==1
                 baselineSNR=10*log10(sum(x.^2)/max(sum(e.^2),realmin));
                 baselinePre=mean_or_nan(e(pre).^2); baselinePost=mean_or_nan(e(post).^2);
                 baselineWidths=diag.widths;
+                baselineExpandedWidths=expandedWidths;
+            end
+            changedBands=NaN;
+            entropySavings=0;
+            if isfield(stats,'entropySavingsBits'), entropySavings=stats.entropySavingsBits; end
+            if isequal(size(diag.widths),size(baselineWidths))
+                changedBands=nnz(diag.widths~=baselineWidths);
             end
             row=struct('source',ids{k},'model',modes{m},'targetKbps',rate, ...
                 'actualKbps',stats.actualKbps,'bytes',stats.totalBytes, ...
@@ -31,7 +40,9 @@ for k=1:numel(ids)
                 'rmse',sqrt(mean(e.^2)),'preOnsetMSE',mean_or_nan(e(pre).^2), ...
                 'postOnsetMSE',mean_or_nan(e(post).^2),'onsets',numel(onsets), ...
                 'paddingBits',stats.paddingBits,'overFullScaleSamples',sum(abs(y)>1), ...
-                'changedBandWidths',nnz(diag.widths~=baselineWidths), ...
+                'entropySavingsBits',entropySavings, ...
+                'changedBandWidths',changedBands, ...
+                'changedCoefficientWidths',nnz(expandedWidths~=baselineExpandedWidths), ...
                 'listening','Not yet assessed');
             row.deltaSNRDB=row.snrDB-baselineSNR;
             row.preOnsetErrorChangeDB=10*log10(row.preOnsetMSE/baselinePre);
