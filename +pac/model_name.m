@@ -28,4 +28,9 @@ end
 if cfg.features.bandwidthExtension
     if strcmp(name,'baseline'), name='bwe'; else, name=[name '_bwe']; end
 end
+[e,~]=pac.experiment_settings(cfg);
+for option={'zeroRun','fileHuffman','smartQuantizer','perceptualEntropy','variableWindows'}
+    if e.(option{1}), name=[name '_' option{1}]; end %#ok<AGROW>
+end
+if e.fileHuffman && strcmp(e.huffmanScope,'window'), name=[name '_windowBooks']; end
 end

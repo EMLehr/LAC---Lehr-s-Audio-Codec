@@ -9,6 +9,9 @@ cfg.vbr.distortionDB = 0; % VBR allowance multiplier = 10^(dB/10); lower is stri
 cfg.allocation=struct('enabled',false,'boundariesDB',[-6 -9 -15], ...
     'savedNumerator',[1 1 1],'savedDenominator',[4 2 1],'stopDB',-24);
 cfg.reservoir=struct('enabled',false,'capacityFrames',8,'targetDB',0);
+cfg.experiments=struct('zeroRun',false,'fileHuffman',false,'smartQuantizer',false, ...
+    'perceptualEntropy',false,'variableWindows',false,'stepRadius',3, ...
+    'peStrengthDB',3,'attackProtectionDB',6,'attackRatio',8,'huffmanScope','file');
 cfg.pam.referenceSPL = 96; % Assumed SPL for digital mean-square power = 1.
 cfg.pam.maskingOffsetDB = 29;
 cfg.pam.lowerSlope = 30; % dB/Bark, approaching a masker from below.

@@ -2,12 +2,14 @@ function stats = encode_audio(inputPath,outputPath,cfg)
 %ENCODE_AUDIO Encode prepared mono audio to the custom LAC1 binary format.
 if nargin<3, cfg=codec_config(); end
 pac.validate_config(cfg);
+assert(cfg.targetKbps*1000==round(cfg.targetKbps*1000),'pac:Config','Bitrate must be integer bits/s.');
+[~,experimental]=pac.experiment_settings(cfg);
+if experimental, stats=pac.encode_experimental(inputPath,outputPath,cfg); return; end
 [rateMode,distortionDB]=pac.rate_settings(cfg); vbr=strcmp(rateMode,'vbr');
 [policy,reservoir]=pac.allocation_settings(cfg); bucket=reservoir.enabled;
 if policy.enabled, distortionDB=policy.stopDB; elseif bucket, distortionDB=reservoir.targetDB; end
 [~,~,extension]=fileparts(outputPath);
 assert(strcmpi(extension,'.lac'),'pac:Output','Encoded output must use the .lac extension.');
-assert(cfg.targetKbps*1000==round(cfg.targetKbps*1000),'pac:Config','Bitrate must be integer bits/s.');
 [x,fs]=pac.read_input(inputPath);
 X=pac.analyze(x); bands=pac.coding_bands(cfg.features.bandwidthExtension);
 flags=double(cfg.features.huffman)+2*double(cfg.features.bandwidthExtension);

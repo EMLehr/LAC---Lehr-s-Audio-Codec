@@ -1,4 +1,6 @@
-# LAC1 binary format, versions 1 through 4
+# LAC1 binary format, versions 1 through 5
+
+Versions 1–4 below describe the established baseline/coding/rate-control paths. Version 5, specified at the end, carries the additional codec experiments. The decoder accepts all five; unknown versions are rejected.
 
 All multi-byte header integers are unsigned little-endian. Frame bit fields are MSB first, with the first bit in bit 7 of the first byte. There is no Huffman coding, bit reservoir, checksum, or external codebook in version 1.
 
@@ -45,7 +47,7 @@ After reconstructing all frames, the decoder applies the version-1 inverse MDCT 
 
 The decoder validates magic, version, flags, dimensions, sample/frame counts, band edges, byte schedule, reserved widths, and zero padding. It rejects truncated files and unexpected trailing bytes. There is no CRC: a payload bit flip that still satisfies structural checks may change the audio without detection. This is a research file format, not a hardened untrusted-input media service.
 
-The current decoder supports all four versions. Version 1 requires zero flags; version 2 requires flags 1, 2, or 3; versions 3/4 accept flags 0 through 3. Other combinations are rejected. With the new allocation options disabled, fixed-rate mode with both coding options off still writes version 1, byte-identical to earlier PAM-only encodes. Earlier decoders reject newer versions explicitly.
+For these four legacy versions, version 1 requires zero flags; version 2 requires flags 1, 2, or 3; versions 3/4 accept flags 0 through 3. Other combinations within these versions are rejected. With all new allocation/experiment options disabled, fixed-rate mode with both coding options off still writes version 1, byte-identical to earlier PAM-only encodes. Earlier decoders reject newer versions explicitly. Version 5 has its own extended flags below.
 
 Temporal masking, tonal/noise classification, enhanced spreading, and enhanced band-allowance mapping are encoder-only PAM options. All 16 combinations use the same version-1 format and zero decoder feature flags. Their choices affect which coefficient integers and step sizes are stored, not how they are reconstructed. The encoder records the model and configuration in its optional JSON sidecar for experiments; that sidecar is never a decoding dependency.
 
@@ -125,3 +127,54 @@ balance = a-l
 ```
 
 Thus spare bytes carry forward up to C; overflow becomes padding, and the final frame empties the bucket with padding. Enforce this exact length rule, total file size T, and EOF after F frames. These checks establish causal credit conservation without requiring the encoder's PAM, NMR targets, saving ratios, sidecar, or original audio. The encoder may spend previously saved capacity but never borrow from future frames. Earlier versions are unchanged. Piecewise allocation alone requires no new syntax: without a bucket it uses versions 1/2 in fixed-rate mode or version 3 in VBR.
+
+## Version 5: optional codec experiments
+
+All header fields through offset 36 retain their types. Version is 5, sample rate is 48000, nominal N is 1024, F is `ceil(L/1024)+1`. Rate zero denotes VBR; positive rate denotes a fixed total file size. The version-5 flags are a bitmask:
+
+| Bit value | Meaning |
+| ---: | --- |
+| 1 | Category Huffman available (fixed book unless overridden) |
+| 2 | BWE enabled |
+| 4 | Zero-run coding available |
+| 8 | Sixteen canonical code lengths in the global header |
+| 16 | Variable-window syntax enabled |
+| 32 | Fixed-rate reservoir enabled |
+| 64 | Per-frame local Huffman books permitted |
+
+No other bits are allowed. Flags 8/64 require flag 1; flag 32 requires positive rate. PE and smart-search decisions need no decoder flags.
+
+After the B+1 long band edges, store:
+
+1. uint16 short-band count S. It is zero without flag 16; otherwise 1–128.
+2. If S>0, S+1 uint16 zero-based short band edges, strictly increasing from 0 to 128.
+3. uint32 reservoir capacity C. It must be zero without flag 32.
+4. If flag 8, sixteen uint8 Huffman code lengths for categories 0–15.
+
+The stored header size must equal the actual size: `42+2*(B+1)+2*(S+1)*(S>0)+16*(flag8)`. Long edges remain increasing from 0 to 1024. BWE requires boundaries at 512 for long and 64 for short transforms. Each book length is an integer 1–15, and `sum(2^(15-length))=2^15`; this validates a complete prefix tree. Codes are canonical, ordered by length then category. The fixed book remains the version-2 book. No external books are read.
+
+### Framing and reservoir
+
+Every frame is uint16 payload byte length followed by that payload. Frame count remains F, including start/stop and short macroframes. The two-byte prefix excludes itself. VBR payloads have only 0–7 zero alignment bits, with a supported maximum of 5000 payload bytes. Total file size is H+2F+sum(payload lengths).
+
+For fixed rate, total size T is `floor(L/48000*R/8)` and pool P is T−H−2F. Nominal payload n(f) follows the same floor-difference schedule as version 4. Without the reservoir, each payload length equals n(f). With it, the canonical length/balance rule is exactly version 4; C must not exceed `floor(100*P/F)`, and `max(n)+C` must fit uint16. All padding bits are zero. Lengths, total bytes, final balance, and EOF are validated. Fixed-rate budgets that cannot fit actual short-frame metadata are rejected by the encoder.
+
+### Payload order
+
+1. Eight-bit frame mode: low two bits are 0=long, 1=start, 2=eight-short, 3=stop; bit value 4 means a local book follows. Other bits are zero. Nonzero sequence mode requires flag 16. Local books require flag 64.
+2. If local-book bit set, sixteen eight-bit code lengths replace the inherited book for this frame only.
+3. Four-bit band widths, all bands in chronological subtransform order. Long/start/stop use the stored long edges once. Eight-short uses the stored short edges eight times, offset by 128 coefficients each. Width 1 is invalid; width zero omits all coefficients. With BWE, bands in each transform's upper half must have width zero.
+4. If BWE enabled, for each subtransform store four eight-bit envelope/two-bit noise pairs. This is 40 bits in long/start/stop frames and 320 bits in eight-short frames.
+5. For every nonzero-width band, eight-bit step code followed by a two-bit representation selector if either flag 1 or flag 4 is set. Otherwise direct packing is implicit.
+6. Representation 0: signed two's-complement integers, each at the band width. Representation 1: category Huffman plus raw sign/magnitude suffix, as in version 2 but with the active book. Representation 2: zero-run tokens described below. Selector 3 is invalid. Representation 1 requires flag 1; representation 2 requires flag 4.
+7. Zero padding to the declared payload byte boundary.
+
+A zero-run token starts with zero, then `ceil(log2(bandCount))` bits holding run length minus one. A nonzero token starts with one, then a Huffman symbol if flag 1 is set, otherwise a directly packed signed value. A nonzero token decoding to zero is invalid. Runs must end within the band and exactly bandCount symbols must be reconstructed. Category/width/signed-range checks are unchanged. Width/step fields and selectors count as side information; symbol/run/sign fields count as coefficient bits. Mode bytes and local books also count as side information.
+
+### Reconstruction and transitions
+
+Step reconstruction is unchanged. In a short frame, coefficients are eight chronological vectors of 128 values; other frames contain one vector of 1024. BWE operates independently on each vector, mirroring its lower half and splitting its upper half into four equal groups (128 coefficients for long, 16 for short). Noise seeds use ordinal `(frame−1)*8+subtransform`, with subtransform 1 for long frames, in the existing deterministic formula. Envelope units and normalization otherwise follow version 2.
+
+Let the macroframe origin be `(frame−1)*1024` in the stream padded by 1024 zeros at its start. A short transform u begins at origin+448+(u−1)*128 and has length 256. Long/start/stop transforms have length 2048 and begin at the origin. The normalized MDCT/IMDCT basis uses its own N (1024 or 128). Long windows are the original sine. Start is long rising half, 448 ones, short falling half, 448 zeros. Stop is its time reverse. Short windows use the full short sine.
+
+Legal transitions are long→long/start, start→short, short→short/stop, stop→long/start. The first mode is long/start and the last long/stop. These constraints are checked before synthesis. Apply the matching synthesis windows, overlap-add at the specified offsets, remove 1024 leading samples, and return L samples. No PAM, detector, PE metric, or quantizer-search setting is needed at decode time.

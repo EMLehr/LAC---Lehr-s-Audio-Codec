@@ -106,7 +106,41 @@ classdef ListeningApp < handle
             if app.Busy, return; end
             app.Closing=true; app.stopPlayback(false);
             if isfield(app.UI,'Dialog') && isgraphics(app.UI.Dialog.Figure), delete(app.UI.Dialog.Figure); end
+            if isfield(app.UI,'ExperimentDialog') && isgraphics(app.UI.ExperimentDialog.Figure), delete(app.UI.ExperimentDialog.Figure); end
             if isgraphics(app.Figure), delete(app.Figure); end
+        end
+        function experimentControls(app,side)
+            if app.Busy, return; end
+            if isfield(app.UI,'ExperimentDialog') && isgraphics(app.UI.ExperimentDialog.Figure), delete(app.UI.ExperimentDialog.Figure); end
+            e=app.UI.Side(side).Experiments;
+            fig=uifigure('Name',['Codec experiments - ' char('A'+side-1)],'Theme','light', ...
+                'Position',[180 90 690 580],'WindowStyle','modal');
+            g=uigridlayout(fig,[10 1],'RowHeight',{54,145,32,32,32,32,32,'1x',28,32},'RowSpacing',6);
+            uilabel(g,'Text','Supplementary experiments. For the assignment PAM-only comparison, leave all five OFF and use fixed bitrate with the original allocator. Variable windows change the required MDCT dimensions.', ...
+                'WordWrap','on','FontColor',[.5 .2 .1]);
+            box=uigridlayout(g,[5 1],'Padding',0,'RowHeight',{25,25,25,25,25},'RowSpacing',3);
+            names={'zeroRun','fileHuffman','smartQuantizer','perceptualEntropy','variableWindows'};
+            labels={'Zero-run coding','Per-file Huffman (automatic size fallback)', ...
+                'Smarter quantizer search','Perceptual entropy: detection and allocation', ...
+                'Variable MDCT windows (experimental; outside assignment dimensions)'};
+            checks=gobjects(5,1);
+            for k=1:5, checks(k)=uicheckbox(box,'Text',labels{k},'Value',e.(names{k})); end
+            row=uigridlayout(g,[1 2],'ColumnWidth',{250,'1x'},'Padding',0);
+            uilabel(row,'Text','Huffman book selection');
+            scope=uidropdown(row,'Items',{'One per file','Per file + per-window books'},'ItemsData',{'file','window'},'Value',e.huffmanScope);
+            keys={'stepRadius','peStrengthDB','attackProtectionDB','attackRatio'};
+            labels={'Quantizer step search radius','PE precision boost (dB)','Attack protection (dB)','Energy jump ratio for attacks'};
+            limits={[1 8],[0 12],[0 24],[2 100]}; numeric=gobjects(4,1);
+            for k=1:4
+                row=uigridlayout(g,[1 2],'ColumnWidth',{250,'1x'},'Padding',0);
+                uilabel(row,'Text',labels{k}); numeric(k)=uieditfield(row,'numeric','Value',e.(keys{k}),'Limits',limits{k});
+            end
+            numeric(1).RoundFractionalValues='on';
+            uilabel(g,'Text','PE works with fixed or variable windows. Without PE, window switching uses energy detection. Local Huffman books must reduce complete payload bytes, including their metadata. All options default off.', ...
+                'WordWrap','on');
+            message=uilabel(g,'Text','','FontColor',[.8 .15 .15]);
+            apply=uibutton(g,'Text','Apply experiments','ButtonPushedFcn',@(~,~) app.applyExperiments(side));
+            app.UI.ExperimentDialog=struct('Figure',fig,'Checks',checks,'Scope',scope,'Numeric',numeric,'Message',message,'Apply',apply);
         end
         function allocationControls(app,side)
             if app.Busy, return; end
@@ -156,7 +190,7 @@ classdef ListeningApp < handle
         function build(app)
             app.Figure=uifigure('Name','LAC Listening Lab - CBR / VBR','Theme','light','Position',[80 70 1150 900], ...
                 'Color',[.96 .97 .98],'CloseRequestFcn',@(~,~) app.close());
-            grid=uigridlayout(app.Figure,[8 1],'RowHeight',{44,34,360,'1x',34,40,86,30}, ...
+            grid=uigridlayout(app.Figure,[8 1],'RowHeight',{44,34,390,'1x',34,40,86,30}, ...
                 'Padding',[16 12 16 12],'RowSpacing',8);
             header=uigridlayout(grid,[1 2],'ColumnWidth',{'1x',450},'Padding',0);
             uilabel(header,'Text','LAC Listening Lab','FontSize',26,'FontWeight','bold');
@@ -174,8 +208,8 @@ classdef ListeningApp < handle
                 'Enhanced band mapping','Huffman coding','Bandwidth extension (12 kHz)'};
             for s=1:2
                 panel=uipanel(sides,'Title',char('A'+s-1),'FontWeight','bold','BackgroundColor','white');
-                g=uigridlayout(panel,[11 2],'ColumnWidth',{145,'1x'}, ...
-                    'RowHeight',{28,28,22,22,22,22,22,22,28,26,'1x'},'Padding',[10 6 10 6],'RowSpacing',3);
+                g=uigridlayout(panel,[12 2],'ColumnWidth',{145,'1x'}, ...
+                    'RowHeight',{28,28,22,22,22,22,22,22,28,26,26,'1x'},'Padding',[10 6 10 6],'RowSpacing',3);
                 uilabel(g,'Text','Version');
                 kind=uidropdown(g,'Items',{'Original','Encoded'},'ValueChangedFcn',@(~,~) app.markDirty());
                 if s==2, kind.Value='Encoded'; end
@@ -194,11 +228,15 @@ classdef ListeningApp < handle
                 advanced=uibutton(g,'Text','Piecewise saving / bit bucket...', ...
                     'ButtonPushedFcn',@(~,~) app.allocationControls(s));
                 advanced.Layout.Column=[1 2]; advanced.Layout.Row=10;
+                experiments=uibutton(g,'Text','Codec experiments (5 options)...', ...
+                    'ButtonPushedFcn',@(~,~) app.experimentControls(s));
+                experiments.Layout.Column=[1 2]; experiments.Layout.Row=11;
                 info=uilabel(g,'Text','Not loaded','WordWrap','on','FontSize',11,'FontColor',[.3 .35 .4]);
-                info.Layout.Column=[1 2]; info.Layout.Row=11;
+                info.Layout.Column=[1 2]; info.Layout.Row=12;
                 defaults=codec_config();
                 app.UI.Side(s)=struct('Kind',kind,'Mode',mode,'Rate',rate,'Checks',checks,'Temporal',temporal, ...
-                    'Advanced',advanced,'Policy',defaults.allocation,'Reservoir',defaults.reservoir,'Info',info);
+                    'Advanced',advanced,'Policy',defaults.allocation,'Reservoir',defaults.reservoir, ...
+                    'ExperimentButton',experiments,'Experiments',defaults.experiments,'Info',info);
             end
             app.UI.Axes=uiaxes(grid); title(app.UI.Axes,'Load a comparison to see the aligned waveforms');
             xlabel(app.UI.Axes,'Time (s)'); ylabel(app.UI.Axes,'Amplitude');
@@ -241,7 +279,22 @@ classdef ListeningApp < handle
             cfg.pam.temporal.postMasking=ismember(controls.Temporal.Value,{'Post + pre-echo','Post only'});
             cfg.pam.temporal.preEchoControl=ismember(controls.Temporal.Value,{'Post + pre-echo','Pre-echo only'});
             cfg.allocation=controls.Policy; cfg.reservoir=controls.Reservoir;
+            cfg.experiments=controls.Experiments;
             if strcmp(cfg.rateMode,'vbr'), cfg.reservoir.enabled=false; end
+        end
+        function applyExperiments(app,side)
+            d=app.UI.ExperimentDialog; e=app.UI.Side(side).Experiments;
+            names={'zeroRun','fileHuffman','smartQuantizer','perceptualEntropy','variableWindows'};
+            for k=1:5, e.(names{k})=d.Checks(k).Value; end
+            keys={'stepRadius','peStrengthDB','attackProtectionDB','attackRatio'};
+            for k=1:4, e.(keys{k})=d.Numeric(k).Value; end
+            e.huffmanScope=d.Scope.Value; cfg=app.selectedConfig(side); cfg.experiments=e;
+            try
+                pac.validate_config(cfg);
+            catch exception
+                d.Message.Text=exception.message; return
+            end
+            app.UI.Side(side).Experiments=e; delete(d.Figure); app.markDirty();
         end
         function applyAllocation(app,side)
             d=app.UI.Dialog; cfg=app.selectedConfig(side);
@@ -297,6 +350,7 @@ classdef ListeningApp < handle
                 encoded=strcmp(controls.Kind.Value,'Encoded') && ~app.Busy;
                 controls.Rate.Enable=app.onOff(encoded);
                 controls.Advanced.Enable=app.onOff(encoded);
+                controls.ExperimentButton.Enable=app.onOff(encoded);
                 if strcmp(controls.Mode.Value,'Variable bitrate') && controls.Policy.enabled
                     controls.Rate.Enable='off';
                 end

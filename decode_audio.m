@@ -7,6 +7,11 @@ fseek(fid,0,'eof'); fileBytes=ftell(fid); fseek(fid,0,'bof');
 assert(fileBytes>=36,'pac:Format','Truncated header.');
 assert(strcmp(char(fread(fid,4,'*uint8')'),'LAC1'),'pac:Format','Invalid magic.');
 version=read(1,'uint16'); flags=read(1,'uint16'); fs=read(1,'uint32');
+if version==5
+    clear guard
+    if nargin<2, outputWav=''; end
+    [y,info]=pac.decode_experimental(inputPath,outputWav); return
+end
 N=read(1,'uint16'); B=read(1,'uint16'); L=read(1,'uint64');
 F=read(1,'uint32'); rate=read(1,'uint32'); storedHeader=read(1,'uint32');
 assert((version==1 && flags==0) || (version==2 && flags>=1 && flags<=3) || ...

@@ -8,9 +8,36 @@ The baseline implements 48 kHz mono input, 2048-sample sine-window MDCT analysis
 
 Baseline stages 1–4 are implemented. Transform and bitstream tests run in MATLAB R2025b Update 1. Development outputs exist locally for harpsichord and castanets at 64, 96, and 128 kb/s. Speech is reserved for final quality testing after choosing PAM changes.
 
-All six optional features default to **off** and are independently selectable: four PAM options (tonal/noise classification, temporal masking, enhanced spreading, enhanced band-allowance mapping), Huffman coding, and SBR-inspired bandwidth extension. Temporal masking has separately controllable post-masking and pre-echo control. No improvement is silently included in the baseline.
+The original six optional features default to **off** and are independently selectable: four PAM options (tonal/noise classification, temporal masking, enhanced spreading, enhanced band-allowance mapping), Huffman coding, and SBR-inspired bandwidth extension. Five additional codec experiments and the piecewise/bucket allocation controls also default off. Temporal masking has separately controllable post-masking and pre-echo control. No improvement is silently included in the baseline.
 
 ## Requirements
+
+### Settings for the assignment's PAM-only investigation
+
+Use **fixed bitrate at 64, 96, or 128 kb/s**, 48 kHz mono, and the default **2048-sample MDCT window / 1024 coefficients / 1024-sample hop**. Compare the all-off baseline against one justified PAM change, holding every non-PAM setting fixed. Combinations of PAM changes are supplementary unless the report clearly isolates its focused hypothesis.
+
+| Toggle or setting | Use in the required PAM-only comparison? | Reason |
+| --- | --- | --- |
+| Tonal vs noise maskers | **Yes** | Changes masker strength in the PAM |
+| Temporal masking: post-masking / pre-echo controls | **Yes** | Changes PAM distortion allowances; keeps the original quantizer and allocator |
+| Adaptive spreading | **Yes** | Changes the PAM's frequency spreading |
+| Enhanced band mapping | **Yes** | Changes masking-curve to band-allowance mapping |
+| CBR, 64 / 96 / 128 kb/s | **Required** | Matched actual file rates; unchanged baseline rate-control algorithm |
+| Original MDCT dimensions | **Required** | Assignment explicitly fixes transform/window/hop sizes |
+| VBR and its quality presets | **No; supplementary** | Changes rate control and does not match fixed target rates |
+| Piecewise bit saving and its NMR/ratio controls | **No; supplementary** | Changes allocation policy |
+| Bit bucket, capacity, and saving target | **No; supplementary** | Changes cross-frame allocation and framing |
+| Fixed Huffman, per-file/per-window books, zero-run coding | **No; supplementary** | Changes entropy coding and its allocation costs |
+| Smarter quantizer and step search radius | **No; supplementary** | Changes quantizer candidate selection |
+| Perceptual entropy, PE boost, attack protection | **No; supplementary** | This implementation adds detection/allocation behavior, beyond the four PAM-only options |
+| Variable MDCT windows and attack ratio | **No; experimental** | Short transforms violate the required fixed dimensions when enabled |
+| Bandwidth extension | **No; supplementary** | Replaces directly coded high-band detail with parametric reconstruction |
+
+Start with `cfg = codec_config()` and enable only the chosen fields among `cfg.features.tonalMaskers`, `temporalMasking`, `enhancedSpreading`, and `enhancedBandMapping`. Leave `features.huffman`, `features.bandwidthExtension`, `allocation.enabled`, `reservoir.enabled`, and **all five `cfg.experiments` switches false**. Leave `rateMode='cbr'` and set `targetKbps` to the required rate. Dormant numeric controls have no effect while their feature is off. Playback volume, seek/loop, and notes do not change encoding and may be used freely.
+
+The baseline necessarily includes its original bit allocator, scalar quantizer, direct binary packing, frequency spreading, and band mapping. "PAM-only" means keeping those components unchanged between the baseline and improved PAM. The entropy/allocator experiments are not substitutes for the required PAM comparison, even if they improve quality or size.
+
+### Environment
 
 - MATLAB; verified with R2025b Update 1 on Windows.
 - Signal Processing Toolbox for `resample` during input preparation.
@@ -26,6 +53,26 @@ Switch A/B at the same playback position, seek, loop a chosen region, adjust sha
 Each encoded side also offers **Fixed bitrate / Variable bitrate**. VBR selects a quality target instead of a bitrate; the GUI shows the resulting actual bitrate and percentage size reduction. See [docs/VARIABLE_BITRATE.md](docs/VARIABLE_BITRATE.md) for its interpretation, results, and reproduction commands. Fixed bitrate remains the default for the assignment.
 
 VBR presets now include **+9 and +12 dB**. The **Piecewise saving / bit bucket...** button opens three editable NMR boundaries and **x in y bits saved** ratios, including the lowest layer. Piecewise allocation works with either rate mode. The optional capped bit bucket carries unused fixed-rate capacity to later frames. Both options default off; see [docs/PIECEWISE_ALLOCATION.md](docs/PIECEWISE_ALLOCATION.md) for controls, accounting, experiments, and limitations.
+
+## Five additional codec experiments
+
+Open **Codec experiments (5 options)...** on an encoded side in `listening_gui`. Each option is independent and defaults off:
+
+1. **Zero-run coding:** exact representation of quantized zero runs, with direct/Huffman fallbacks.
+2. **Per-file Huffman:** a learned category book stored in the file, with automatic fixed-book fallback. The book-selection setting optionally tests **per-window books** too; each local book must save complete payload bytes after its metadata.
+3. **Smarter quantizer search:** multiple step sizes at each width, including controlled clipping candidates and the original choice.
+4. **Perceptual entropy:** PE-informed precision and attack protection in either window mode; also contributes to window switching when enabled.
+5. **Variable MDCT windows:** long/start/eight-short/stop sequences, using eight 256-sample transforms around detected attacks. This is experimental and outside the assignment's fixed dimensions. With PE off, switching uses energy detection alone.
+
+The decoder reads version 5 for these experiments; versions 1–4 remain supported. All new toggles off uses the original encoding path. See [docs/CODEC_EXPERIMENTS.md](docs/CODEC_EXPERIMENTS.md) for algorithms, overhead checks, settings, validation, and measured limitations.
+
+```text
+matlab -batch "stage12_verify_experiments;"
+matlab -batch "stage12_experiments('encode');"
+matlab -batch "stage12_experiments('decode');"
+matlab -batch "stage12_experiments('evaluate');"
+matlab -batch "stage12_verify_gui;"
+```
 
 ## Prepare the source audio
 
@@ -146,7 +193,7 @@ Either switch works alone or with any PAM configuration. Huffman coding lossless
 
 Bandwidth extension directly codes the lower 12 kHz, then reconstructs the upper half from mirrored decoded coefficients with transmitted energy envelopes and noise fractions. This is a lossy SBR-inspired experiment, not standards-compliant SBR. The required 2048/1024 MDCT dimensions and 48 kHz output are preserved.
 
-Both options use explicit flags in version-2 `.lac` files under the original fixed-rate allocator. The decoder detects all four supported format versions. With both coding switches and the new allocation controls off in fixed-rate mode, the encoder still produces byte-identical version-1 output.
+Both options use explicit flags in version-2 `.lac` files under the original fixed-rate allocator. The decoder detects all five supported format versions. With both coding switches and all allocation/experiment controls off in fixed-rate mode, the encoder still produces byte-identical version-1 output.
 
 After stage 7 encoding:
 
@@ -173,6 +220,7 @@ Stage 8 compares neither tool, Huffman only, BWE only, and both, with baseline P
 | `outputs/listening/` | On-demand encoded/decoded comparison cache, saved listening notes, GUI verification, and preview |
 | `outputs/vbr/` | Quality-target VBR comparisons, actual compression percentages, reconstructed WAVs, target diagnostics, and frame-rate plot |
 | `outputs/allocation/` | Piecewise/bucket comparisons, fresh-process decoded WAVs, measurements, and bucket-balance plot |
+| `outputs/experiments/` | Five-option development comparisons, learned-book decisions, window modes, PE diagnostics, and reconstructed WAVs |
 
 Reconstructed WAVs use 32-bit IEEE float samples. This preserves playback levels and overshoots without clipping or normalizing them; the 768 kb/s compression reference is still **48 kHz mono 16-bit PCM**. The WAV writer's output is checked against MATLAB `audioread`.
 

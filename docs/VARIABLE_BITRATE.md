@@ -56,7 +56,7 @@ size reduction (%) = 100 * (1 - total file bytes / (2 * original sample count))
 
 The reference is 48 kHz mono 16-bit PCM, or 768 kb/s. Negative size reduction is possible when a very short file's mandatory overhead exceeds its PCM size. Unlike CBR, VBR can encode even a one-sample input because it does not have to fit a duration-derived target budget.
 
-Fixed-rate files without the optional bucket remain version 1 or 2 and preserve their bytes. Bucket mode uses version 4. The decoder supports all four versions; older decoders reject unknown versions rather than misinterpreting them. No codec feature is silently enabled by selecting VBR.
+With the five codec experiments disabled, fixed-rate files without the optional bucket remain version 1 or 2 and preserve their bytes; bucket mode uses version 4. Enabling a new codec experiment uses version 5 in either rate mode. The decoder supports all five versions; older decoders reject unknown versions rather than misinterpreting them. No codec feature is silently enabled by selecting VBR.
 
 ## Why PAM switches now change size
 

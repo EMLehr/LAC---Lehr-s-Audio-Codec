@@ -1,8 +1,9 @@
-function bands = coding_bands(bandwidthExtension)
+function bands = coding_bands(bandwidthExtension,N)
 %CODING_BANDS Preserve baseline bands; split at 12 kHz only for BWE.
-bands=pac.bands();
+if nargin<2, N=1024; end
+bands=pac.bands(N);
 if ~bandwidthExtension, return; end
-bands.edges=unique([bands.edges;513]); bands.count=diff(bands.edges);
+bands.edges=unique([bands.edges;N/2+1]); bands.count=diff(bands.edges);
 bands.centers=zeros(numel(bands.count),1);
 for b=1:numel(bands.count)
     bands.centers(b)=mean(bands.bark(bands.edges(b):bands.edges(b+1)-1));

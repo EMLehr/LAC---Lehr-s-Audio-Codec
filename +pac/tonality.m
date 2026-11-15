@@ -9,6 +9,7 @@ for b=1:B
     power=X(idx,:).^2;
     average=mean(power,1);
     active=average>0;
+    if ~any(active), continue; end
     normalized=power(:,active)./average(active);
     % Relative floor avoids log(0) without creating a signal-level dependence.
     flatnessDB(b,active)=min(0,10*mean(log10(max(normalized,1e-12)),1));

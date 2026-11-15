@@ -12,6 +12,8 @@ Each encoded side has a **Piecewise saving / bit bucket...** button. The dialog 
 
 ## Comparing versions
 
+The additional **Codec experiments (5 options)...** button opens independent zero-run, per-file Huffman, smarter-quantizer, PE, and variable-window switches. Its Huffman scope setting optionally allows local per-window books, with metadata-inclusive size guards. PE works independently with fixed windows. Variable windows are clearly marked outside assignment dimensions. All five must remain off for the required PAM-only comparisons; see the README's settings table and [CODEC_EXPERIMENTS.md](CODEC_EXPERIMENTS.md). Applying changes marks the comparison for reload. Open a fresh GUI window after updating the source.
+
 1. Choose harpsichord, castanets, or the explicitly labelled final-test speech excerpt.
 2. Independently configure A and B as Original or Encoded. Each encoded side has a Fixed bitrate / Variable bitrate selector. Fixed bitrate offers 64/96/128 kb/s; ordinary VBR offers -6, 0, +6, +9, and +12 dB PAM-relative distortion targets. All six feature checkboxes remain independent. All feature and allocation options off in fixed-rate mode means baseline. Temporal masking additionally offers both components, post-only, pre-echo-only, or bypass.
 3. Click **Load / generate comparison**. A selection change pauses playback and disables playback/notes until loaded, preventing a comparison from being labelled with settings that have not been applied.
