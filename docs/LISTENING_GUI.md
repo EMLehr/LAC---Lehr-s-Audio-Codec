@@ -11,13 +11,15 @@ The window opens with the prepared harpsichord original in A and the baseline co
 ## Comparing versions
 
 1. Choose harpsichord, castanets, or the explicitly labelled final-test speech excerpt.
-2. Independently configure A and B as Original or Encoded. Each encoded side has its own 64/96/128 kb/s selection and all six feature checkboxes. All boxes off means baseline. Temporal masking additionally offers both components, post-only, pre-echo-only, or bypass.
+2. Independently configure A and B as Original or Encoded. Each encoded side has a Fixed bitrate / Variable bitrate selector. Fixed bitrate offers 64/96/128 kb/s; VBR offers stricter -6 dB, standard 0 dB, or looser +6 dB PAM-relative distortion targets. All six feature checkboxes remain independent. All boxes off means baseline. Temporal masking additionally offers both components, post-only, pre-echo-only, or bypass.
 3. Click **Load / generate comparison**. A selection change pauses playback and disables playback/notes until loaded, preventing a comparison from being labelled with settings that have not been applied.
 4. Select **Listen A** or **Listen B**, then **Play**. Pressing the other side while playing resumes that side at the current sample position. This restarts the audio device, so a brief switching gap is possible; it is not a gapless crossfade. Pause retains the position. Stop returns to the region start.
 5. Seek with the timeline, enter a region in seconds with **From** and **to**, and enable **Loop** to repeat it. Regions shorter than 20 ms or with reversed endpoints reset to the full clip.
 6. Write observations and click **Save listening notes**. The saved record includes both configurations, actual rates and paths, source, region, active side, common playback gain, and a UTC timestamp.
 
 This supports all 64 combinations of the six switches at each of the three rates, plus the temporal component variants. You can compare original versus codec, two different bitrates, or two different feature combinations. Generating every variation in advance is unnecessary. Configurations are labelled; this is an A/B audition interface, not a blinded ABX or formal listening-test protocol.
+
+You can also compare CBR with VBR, or different VBR quality presets. The information below each side shows the actual bitrate, file size, and percentage reduction against 16-bit PCM. In VBR, changing PAM options can change the resulting size; equal quality settings across different PAMs do not guarantee equal perceived quality. See [VARIABLE_BITRATE.md](VARIABLE_BITRATE.md). Old already-open windows retain their app instance; open a fresh window for the new controls.
 
 Speech is not automatically encoded or auditioned. Selecting it only changes the pending selection; clicking Load consumes that final-test excerpt. Choose and freeze the PAM investigation before using speech results to judge it. The GUI does not perform automatic model selection or change codec defaults.
 

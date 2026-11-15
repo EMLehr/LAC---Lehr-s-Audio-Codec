@@ -1,4 +1,4 @@
-# LAC1 binary format, versions 1 and 2
+# LAC1 binary format, versions 1, 2, and 3
 
 All multi-byte header integers are unsigned little-endian. Frame bit fields are MSB first, with the first bit in bit 7 of the first byte. There is no Huffman coding, bit reservoir, checksum, or external codebook in version 1.
 
@@ -7,20 +7,20 @@ All multi-byte header integers are unsigned little-endian. Frame bit fields are 
 | Byte offset | Type | Meaning |
 | --- | --- | --- |
 | 0 | 4 bytes | ASCII `LAC1` |
-| 4 | uint16 | Format version: 1 or 2 |
-| 6 | uint16 | Version 1: zero. Version 2: 1 = Huffman, 2 = bandwidth extension, 3 = both |
+| 4 | uint16 | Format version: 1, 2, or 3 |
+| 6 | uint16 | Version 1: zero. Versions 2/3: 1 = Huffman, 2 = bandwidth extension, 3 = both; version 3 also accepts zero |
 | 8 | uint32 | Sample rate: 48000 |
 | 12 | uint16 | MDCT coefficient count / hop N: 1024 |
 | 14 | uint16 | Number of quantization bands B |
 | 16 | uint64 | Original sample count L |
 | 24 | uint32 | Frame count F = ceil(L/N) + 1 |
-| 28 | uint32 | Target bitrate R, integer bits/second |
+| 28 | uint32 | Versions 1/2: target bitrate R, integer bits/second. Version 3: zero (quality-target VBR) |
 | 32 | uint32 | Header size H = 36 + 2(B+1) bytes |
 | 36 | B+1 uint16 | Ascending zero-based band edges, first 0, last 1024; final edge exclusive |
 
 Band edges in the file, rather than the PAM implementation, tell the decoder how to interpret each frame. Padding and window conventions are fixed by this version. The decoder does not need any encoder-side PAM parameters.
 
-## Byte schedule
+## Versions 1/2 byte schedule
 
 Total file bytes are `T = floor(L / 48000 * R / 8)`. There are `P = T - H` frame bytes. For one-based frame f, its byte count is:
 
@@ -44,7 +44,7 @@ After reconstructing all frames, the decoder applies the version-1 inverse MDCT 
 
 The decoder validates magic, version, flags, dimensions, sample/frame counts, band edges, byte schedule, reserved widths, and zero padding. It rejects truncated files and unexpected trailing bytes. There is no CRC: a payload bit flip that still satisfies structural checks may change the audio without detection. This is a research file format, not a hardened untrusted-input media service.
 
-The current decoder supports both versions. Version 1 requires zero flags; version 2 requires flags 1, 2, or 3. Other combinations are rejected. When both coding options are off, the encoder still writes version 1, byte-identical to earlier PAM-only encodes. Earlier version-1-only decoder implementations reject version 2 explicitly.
+The current decoder supports all three versions. Version 1 requires zero flags; version 2 requires flags 1, 2, or 3; version 3 accepts flags 0 through 3. Other combinations are rejected. In fixed-rate mode, both coding options off still writes version 1, byte-identical to earlier PAM-only encodes. Earlier decoders reject newer versions explicitly.
 
 Temporal masking, tonal/noise classification, enhanced spreading, and enhanced band-allowance mapping are encoder-only PAM options. All 16 combinations use the same version-1 format and zero decoder feature flags. Their choices affect which coefficient integers and step sizes are stored, not how they are reconstructed. The encoder records the model and configuration in its optional JSON sidecar for experiments; that sidecar is never a decoding dependency.
 
@@ -98,3 +98,13 @@ After dequantizing the core, reverse coefficients 512:1 into a 512-element templ
 4. Normalize shape to unit norm and multiply by `sqrt(128)*RMS` to obtain reconstructed high coefficients. A silent envelope writes all zeros.
 
 Perform the usual inverse MDCT, overlap-add, and original-length trimming after this reconstruction. No original spectrum, encoder RNG state, PAM configuration, or metadata sidecar is consulted.
+
+## Version 3: quality-target variable bitrate
+
+The magic, header fields, band edges, quantizer, optional coding tools, and transform conventions are unchanged. Version 3 sets the rate field at offset 28 to **zero**. There is no target total size or deterministic fixed-rate byte schedule.
+
+Each of the F frames consists of an unsigned little-endian uint16 payload length, immediately followed by that many payload bytes. The two-byte prefix does not count itself. Payload syntax is the same as version 2 (or version 1 when flags are zero). The encoder writes exactly `ceil(usedBits/8)` payload bytes; only 0-7 trailing zero alignment bits are allowed. Whole-byte padding is rejected. Coefficients above a BWE boundary are reconstructed using the same one-based frame index as before.
+
+For B stored bands, N = 1024, and E = 40 when BWE is enabled or zero otherwise, the supported payload length must be between `ceil((4*B+E)/8)` and `ceil((13*B+15*N+E)/8)` bytes. These bounds cover all encoder candidates, including active-band step/selector overhead and maximum direct width. The decoder checks lengths before reading and requires EOF immediately after the Fth frame. Missing prefixes, truncated payloads, excess padding, nonzero rate, invalid flags, and trailing data are rejected.
+
+Complete file bytes are `headerBytes + 2*F + sum(payloadBytes)`. Actual bitrate uses the original sample duration, not padded transform duration. The encoder's quality setting is optional experimental metadata in the JSON sidecar; it is not needed to decode the chosen integers and steps. The decoder never runs the PAM or needs to know the target that selected them.

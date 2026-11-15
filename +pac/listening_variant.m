@@ -5,7 +5,8 @@ input=fullfile(root,'outputs','prepared',[source '.mat']);
 assert(isfile(input),'pac:Input','Prepared audio missing. Run stage1_prepare_inputs first.');
 [x,fs]=pac.read_input(input);
 result=struct('x',x,'fs',fs,'source',source,'model','original','path',input, ...
-    'config',cfg,'original',original,'actualKbps',768,'bytes',2*numel(x),'cacheHit',false);
+    'config',cfg,'original',original,'actualKbps',768,'bytes',2*numel(x),'cacheHit',false, ...
+    'sizeReductionPercent',0,'rateMode','original');
 if original, return; end
 pac.validate_config(cfg);
 % Hash samples, exact configuration, and codec implementation. GUI changes
@@ -22,7 +23,8 @@ end
 key=lower(reshape(dec2hex(typecast(digest.digest(),'uint8'),2)',1,[]));
 folder=fullfile(root,'outputs','listening','cache');
 if ~isfolder(folder), mkdir(folder); end
-path=fullfile(folder,sprintf('%s_%dk_%s.lac',source,cfg.targetKbps,key));
+[mode,~]=pac.rate_settings(cfg);
+path=fullfile(folder,sprintf('%s_%s_%s.lac',source,mode,key));
 result.cacheHit=isfile(path);
 if ~result.cacheHit
     temporary=[tempname(folder) '.lac'];
@@ -44,6 +46,7 @@ wav=[path(1:end-4) '_decoded.wav'];
 if ~isfile(wav), pac.write_wav(wav,decoded,fs); end
 result.x=decoded; result.path=path; result.actualKbps=info.actualKbps;
 result.bytes=info.totalBytes; result.model=pac.model_name(cfg);
+result.sizeReductionPercent=info.sizeReductionPercent; result.rateMode=info.rateMode;
     function add(bytes)
         digest.update(typecast(uint8(bytes(:)),'int8'));
     end

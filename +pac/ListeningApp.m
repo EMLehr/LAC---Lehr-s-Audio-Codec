@@ -46,8 +46,13 @@ classdef ListeningApp < handle
                     if d.original
                         label='Original prepared audio | 48 kHz mono | 16-bit PCM reference: 768 kb/s';
                     else
-                        label=sprintf('%s | target %d, actual %.3f kb/s | %s bytes', ...
-                            strrep(d.model,'_',' '),d.config.targetKbps,d.actualKbps,string(d.bytes));
+                        if strcmp(d.rateMode,'vbr')
+                            setting=sprintf('VBR, target %+g dB',d.config.vbr.distortionDB);
+                        else
+                            setting=sprintf('CBR, target %d kb/s',d.config.targetKbps);
+                        end
+                        label=sprintf('%s\n%s | actual %.2f kb/s | %.2f%% smaller | %d bytes', ...
+                            strrep(d.model,'_',' '),setting,d.actualKbps,d.sizeReductionPercent,d.bytes);
                     end
                     app.UI.Side(side).Info.Text=label;
                 end
@@ -99,9 +104,9 @@ classdef ListeningApp < handle
     end
     methods (Access=private)
         function build(app)
-            app.Figure=uifigure('Name','LAC Listening Lab','Theme','light','Position',[80 70 1150 900], ...
+            app.Figure=uifigure('Name','LAC Listening Lab - CBR / VBR','Theme','light','Position',[80 70 1150 900], ...
                 'Color',[.96 .97 .98],'CloseRequestFcn',@(~,~) app.close());
-            grid=uigridlayout(app.Figure,[8 1],'RowHeight',{44,34,310,'1x',34,40,86,30}, ...
+            grid=uigridlayout(app.Figure,[8 1],'RowHeight',{44,34,330,'1x',34,40,86,30}, ...
                 'Padding',[16 12 16 12],'RowSpacing',8);
             header=uigridlayout(grid,[1 2],'ColumnWidth',{'1x',450},'Padding',0);
             uilabel(header,'Text','LAC Listening Lab','FontSize',26,'FontWeight','bold');
@@ -124,7 +129,8 @@ classdef ListeningApp < handle
                 uilabel(g,'Text','Version');
                 kind=uidropdown(g,'Items',{'Original','Encoded'},'ValueChangedFcn',@(~,~) app.markDirty());
                 if s==2, kind.Value='Encoded'; end
-                uilabel(g,'Text','Target bitrate');
+                mode=uidropdown(g,'Items',{'Fixed bitrate','Variable bitrate'}, ...
+                    'ValueChangedFcn',@(~,~) app.modeChanged(s));
                 rate=uidropdown(g,'Items',{'64 kb/s','96 kb/s','128 kb/s'},'ItemsData',[64 96 128], ...
                     'Value',96,'ValueChangedFcn',@(~,~) app.markDirty());
                 checks=gobjects(6,1);
@@ -137,7 +143,7 @@ classdef ListeningApp < handle
                     'ValueChangedFcn',@(~,~) app.markDirty());
                 info=uilabel(g,'Text','Not loaded','WordWrap','on','FontSize',11,'FontColor',[.3 .35 .4]);
                 info.Layout.Column=[1 2]; info.Layout.Row=10;
-                app.UI.Side(s)=struct('Kind',kind,'Rate',rate,'Checks',checks,'Temporal',temporal,'Info',info);
+                app.UI.Side(s)=struct('Kind',kind,'Mode',mode,'Rate',rate,'Checks',checks,'Temporal',temporal,'Info',info);
             end
             app.UI.Axes=uiaxes(grid); title(app.UI.Axes,'Load a comparison to see the aligned waveforms');
             xlabel(app.UI.Axes,'Time (s)'); ylabel(app.UI.Axes,'Amplitude');
@@ -169,11 +175,29 @@ classdef ListeningApp < handle
                 'WordWrap','on','FontSize',11);
         end
         function cfg=selectedConfig(app,side)
-            controls=app.UI.Side(side); cfg=codec_config(); cfg.targetKbps=controls.Rate.Value;
+            controls=app.UI.Side(side); cfg=codec_config();
+            if strcmp(controls.Mode.Value,'Variable bitrate')
+                cfg.rateMode='vbr'; cfg.vbr.distortionDB=controls.Rate.Value;
+            else
+                cfg.targetKbps=controls.Rate.Value;
+            end
             names=fieldnames(cfg.features);
             for k=1:6, cfg.features.(names{k})=controls.Checks(k).Value; end
             cfg.pam.temporal.postMasking=ismember(controls.Temporal.Value,{'Post + pre-echo','Post only'});
             cfg.pam.temporal.preEchoControl=ismember(controls.Temporal.Value,{'Post + pre-echo','Pre-echo only'});
+        end
+        function modeChanged(app,side)
+            controls=app.UI.Side(side);
+            if strcmp(controls.Mode.Value,'Variable bitrate')
+                controls.Rate.ItemsData=[];
+                controls.Rate.Items={'Higher quality (-6 dB)','Standard (0 dB)','Smaller file (+6 dB)'};
+                controls.Rate.ItemsData=[-6 0 6]; controls.Rate.Value=0;
+            else
+                controls.Rate.ItemsData=[];
+                controls.Rate.Items={'64 kb/s','96 kb/s','128 kb/s'};
+                controls.Rate.ItemsData=[64 96 128]; controls.Rate.Value=96;
+            end
+            app.markDirty();
         end
         function markDirty(app)
             app.stopPlayback(true); app.Dirty=true;
@@ -195,6 +219,7 @@ classdef ListeningApp < handle
                 controls=app.UI.Side(s); controls.Kind.Enable=app.onOff(~app.Busy);
                 encoded=strcmp(controls.Kind.Value,'Encoded') && ~app.Busy;
                 controls.Rate.Enable=app.onOff(encoded);
+                controls.Mode.Enable=app.onOff(encoded);
                 for k=1:6, controls.Checks(k).Enable=app.onOff(encoded); end
                 controls.Temporal.Enable=app.onOff(encoded && controls.Checks(2).Value);
             end

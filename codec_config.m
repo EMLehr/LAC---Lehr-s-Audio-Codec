@@ -4,6 +4,8 @@ cfg.sampleRate = 48000;
 cfg.hop = 1024;
 cfg.windowLength = 2048;
 cfg.targetKbps = 96;
+cfg.rateMode = 'cbr'; % Fixed total-file bitrate remains the assignment baseline.
+cfg.vbr.distortionDB = 0; % VBR allowance multiplier = 10^(dB/10); lower is stricter.
 cfg.pam.referenceSPL = 96; % Assumed SPL for digital mean-square power = 1.
 cfg.pam.maskingOffsetDB = 29;
 cfg.pam.lowerSlope = 30; % dB/Bark, approaching a masker from below.

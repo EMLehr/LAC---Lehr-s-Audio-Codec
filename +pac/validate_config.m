@@ -1,5 +1,6 @@
 function validate_config(cfg)
 base = codec_config();
+pac.rate_settings(cfg);
 assert(cfg.sampleRate == 48000 && cfg.hop == 1024 && ...
     cfg.windowLength == 2048,'pac:Config','Required transform dimensions changed.');
 assert(isscalar(cfg.targetKbps) && isfinite(cfg.targetKbps) && ...

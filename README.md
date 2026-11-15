@@ -23,6 +23,8 @@ Run `listening_gui` in MATLAB to open the A/B listening window. Each side can be
 
 Switch A/B at the same playback position, seek, loop a chosen region, adjust shared volume, and save listening notes with the exact configurations. Speech is labelled as the final-test excerpt and is only loaded when requested. See [docs/LISTENING_GUI.md](docs/LISTENING_GUI.md) for operation, playback levels, testing, and the local MATLAB audio-driver shutdown limitation.
 
+Each encoded side also offers **Fixed bitrate / Variable bitrate**. VBR selects a quality target instead of a bitrate; the GUI shows the resulting actual bitrate and percentage size reduction. See [docs/VARIABLE_BITRATE.md](docs/VARIABLE_BITRATE.md) for its interpretation, results, and reproduction commands. Fixed bitrate remains the default for the assignment.
+
 ## Prepare the source audio
 
 Download the originals from the [QOA SQAM sample collection](https://qoaformat.org/samples/), following the [EBU usage terms](https://qc.ebu.io/testmaterials/523/):
@@ -167,6 +169,7 @@ Stage 8 compares neither tool, Huffman only, BWE only, and both, with baseline P
 | `outputs/pam_options/` | All 16 PAM combinations, 96 encoded/decoded pairs, regression checks, measurements, and global-curve/band-allowance/allocation plot |
 | `outputs/coding_features/` | Separate baseline-PAM/all-PAM comparisons of Huffman and BWE, 48 encoded/decoded pairs, byte regressions, measurements, and reconstructed-spectrum plot |
 | `outputs/listening/` | On-demand encoded/decoded comparison cache, saved listening notes, GUI verification, and preview |
+| `outputs/vbr/` | Quality-target VBR comparisons, actual compression percentages, reconstructed WAVs, target diagnostics, and frame-rate plot |
 
 Reconstructed WAVs use 32-bit IEEE float samples. This preserves playback levels and overshoots without clipping or normalizing them; the 768 kb/s compression reference is still **48 kHz mono 16-bit PCM**. The WAV writer's output is checked against MATLAB `audioread`.
 
@@ -176,7 +179,7 @@ The PAM estimates masking directly from MDCT-domain band energies. It combines a
 
 The allocator considers omitting a band or quantizing it with 2–15 bits per coefficient and a stored step size. It greedily buys the greatest reduction of threshold-normalized squared error per extra bit. The byte schedule includes the global header, all band metadata, and frame padding. There is no bit reservoir or entropy coding. The bitstream format is fully described in [docs/BITSTREAM.md](docs/BITSTREAM.md).
 
-For a 10-second input the complete files are exactly 80,000, 120,000, and 160,000 bytes at 64, 96, and 128 kb/s. Other durations are rounded down to whole bytes. Unused frame capacity is explicit zero padding and separately reported. Extremely short clips cannot fit the mandatory metadata at low rates and produce an explanatory error; the unquantized transform itself supports any positive input length.
+In fixed-bitrate mode, a 10-second input produces complete files of exactly 80,000, 120,000, and 160,000 bytes at 64, 96, and 128 kb/s. Other durations are rounded down to whole bytes. Unused frame capacity is explicit zero padding and separately reported. Extremely short clips cannot fit the mandatory metadata at low fixed rates and produce an explanatory error; the unquantized transform itself supports any positive input length. Optional quality-target VBR instead writes minimally padded variable-size frames and reports the resulting bitrate.
 
 ## Validation and limitations
 
