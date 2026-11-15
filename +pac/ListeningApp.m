@@ -51,6 +51,12 @@ classdef ListeningApp < handle
                         else
                             setting=sprintf('CBR, target %d kb/s',d.config.targetKbps);
                         end
+                        [p,r]=pac.allocation_settings(d.config);
+                        if p.enabled
+                            if strcmp(d.rateMode,'vbr'), setting='VBR'; end
+                            setting=sprintf('%s | piecewise limit %+g dB',setting,p.stopDB);
+                        end
+                        if r.enabled, setting=sprintf('%s | bucket',setting); end
                         label=sprintf('%s\n%s | actual %.2f kb/s | %.2f%% smaller | %d bytes', ...
                             strrep(d.model,'_',' '),setting,d.actualKbps,d.sizeReductionPercent,d.bytes);
                     end
@@ -99,14 +105,58 @@ classdef ListeningApp < handle
         function close(app)
             if app.Busy, return; end
             app.Closing=true; app.stopPlayback(false);
+            if isfield(app.UI,'Dialog') && isgraphics(app.UI.Dialog.Figure), delete(app.UI.Dialog.Figure); end
             if isgraphics(app.Figure), delete(app.Figure); end
+        end
+        function allocationControls(app,side)
+            if app.Busy, return; end
+            if isfield(app.UI,'Dialog') && isgraphics(app.UI.Dialog.Figure), delete(app.UI.Dialog.Figure); end
+            p=app.UI.Side(side).Policy; r=app.UI.Side(side).Reservoir;
+            fig=uifigure('Name',['Allocation controls - ' char('A'+side-1)],'Theme','light', ...
+                'Position',[180 110 650 560],'WindowStyle','modal');
+            g=uigridlayout(fig,[10 1],'RowHeight',{28,42,130,32,32,32,36,'1x',24,32},'RowSpacing',6);
+            enabled=uicheckbox(g,'Text','Enable piecewise bit saving','Value',p.enabled);
+            uilabel(g,'Text','NMR = error relative to PAM allowance. Lower is better. Above the first boundary, all available refinement bits may be spent.', ...
+                'WordWrap','on');
+            table=uigridlayout(g,[4 5],'ColumnWidth',{150,65,30,65,'1x'},'RowHeight',{22,26,26,26},'Padding',0);
+            uilabel(table,'Text','At / below NMR (dB)'); uilabel(table,'Text','x');
+            uilabel(table,'Text',''); uilabel(table,'Text','y'); uilabel(table,'Text','Saving ratio');
+            boundary=gobjects(3,1); numerator=boundary; denominator=boundary;
+            for k=1:3
+                boundary(k)=uieditfield(table,'numeric','Value',p.boundariesDB(k),'Limits',[-60 30]);
+                numerator(k)=uieditfield(table,'numeric','Value',p.savedNumerator(k),'Limits',[0 1000],'RoundFractionalValues','on');
+                uilabel(table,'Text','in');
+                denominator(k)=uieditfield(table,'numeric','Value',p.savedDenominator(k),'Limits',[1 1000],'RoundFractionalValues','on');
+                uilabel(table,'Text','bits saved');
+            end
+            row=uigridlayout(g,[1 2],'ColumnWidth',{270,'1x'},'Padding',0);
+            uilabel(row,'Text','Final refinement limit (NMR dB)');
+            final=uieditfield(row,'numeric','Value',p.stopDB,'Limits',[-60 30]);
+            bucket=uicheckbox(g,'Text','Enable bit bucket (fixed bitrate only)','Value',r.enabled);
+            row=uigridlayout(g,[1 4],'ColumnWidth',{125,80,230,'1x'},'Padding',0);
+            uilabel(row,'Text','Capacity (frames)');
+            capacity=uieditfield(row,'numeric','Value',r.capacityFrames,'Limits',[0 100],'RoundFractionalValues','on');
+            uilabel(row,'Text','Saving target when piecewise is off');
+            target=uieditfield(row,'numeric','Value',r.targetDB,'Limits',[-60 30]);
+            if strcmp(app.UI.Side(side).Mode.Value,'Variable bitrate')
+                bucket.Value=false; bucket.Enable='off'; capacity.Enable='off'; target.Enable='off';
+            end
+            uilabel(g,'Text','Three editable ratios, including the lowest layer. 1 in 1 bits saved stops paid refinement in that layer.', ...
+                'WordWrap','on');
+            uilabel(g,'Text','VBR uses the cost of reaching the final limit as a finite budget; reserved bits reduce the file. The limit is not a guaranteed achieved NMR. In CBR, enable the bucket to carry savings forward; otherwise they become padding. Full buckets and end of file also produce padding.', ...
+                'WordWrap','on','FontColor',[.3 .35 .4]);
+            message=uilabel(g,'Text','','FontColor',[.8 .15 .15]);
+            apply=uibutton(g,'Text','Apply allocation controls','ButtonPushedFcn',@(~,~) app.applyAllocation(side));
+            app.UI.Dialog=struct('Figure',fig,'Enabled',enabled,'Boundary',boundary,'Numerator',numerator, ...
+                'Denominator',denominator,'Final',final,'Bucket',bucket,'Capacity',capacity,'Target',target, ...
+                'Apply',apply,'Message',message);
         end
     end
     methods (Access=private)
         function build(app)
             app.Figure=uifigure('Name','LAC Listening Lab - CBR / VBR','Theme','light','Position',[80 70 1150 900], ...
                 'Color',[.96 .97 .98],'CloseRequestFcn',@(~,~) app.close());
-            grid=uigridlayout(app.Figure,[8 1],'RowHeight',{44,34,330,'1x',34,40,86,30}, ...
+            grid=uigridlayout(app.Figure,[8 1],'RowHeight',{44,34,360,'1x',34,40,86,30}, ...
                 'Padding',[16 12 16 12],'RowSpacing',8);
             header=uigridlayout(grid,[1 2],'ColumnWidth',{'1x',450},'Padding',0);
             uilabel(header,'Text','LAC Listening Lab','FontSize',26,'FontWeight','bold');
@@ -124,8 +174,8 @@ classdef ListeningApp < handle
                 'Enhanced band mapping','Huffman coding','Bandwidth extension (12 kHz)'};
             for s=1:2
                 panel=uipanel(sides,'Title',char('A'+s-1),'FontWeight','bold','BackgroundColor','white');
-                g=uigridlayout(panel,[10 2],'ColumnWidth',{145,'1x'}, ...
-                    'RowHeight',{28,28,22,22,22,22,22,22,28,'1x'},'Padding',[10 6 10 6],'RowSpacing',3);
+                g=uigridlayout(panel,[11 2],'ColumnWidth',{145,'1x'}, ...
+                    'RowHeight',{28,28,22,22,22,22,22,22,28,26,'1x'},'Padding',[10 6 10 6],'RowSpacing',3);
                 uilabel(g,'Text','Version');
                 kind=uidropdown(g,'Items',{'Original','Encoded'},'ValueChangedFcn',@(~,~) app.markDirty());
                 if s==2, kind.Value='Encoded'; end
@@ -141,9 +191,14 @@ classdef ListeningApp < handle
                 uilabel(g,'Text','Temporal components');
                 temporal=uidropdown(g,'Items',{'Post + pre-echo','Post only','Pre-echo only','Bypass'}, ...
                     'ValueChangedFcn',@(~,~) app.markDirty());
+                advanced=uibutton(g,'Text','Piecewise saving / bit bucket...', ...
+                    'ButtonPushedFcn',@(~,~) app.allocationControls(s));
+                advanced.Layout.Column=[1 2]; advanced.Layout.Row=10;
                 info=uilabel(g,'Text','Not loaded','WordWrap','on','FontSize',11,'FontColor',[.3 .35 .4]);
-                info.Layout.Column=[1 2]; info.Layout.Row=10;
-                app.UI.Side(s)=struct('Kind',kind,'Mode',mode,'Rate',rate,'Checks',checks,'Temporal',temporal,'Info',info);
+                info.Layout.Column=[1 2]; info.Layout.Row=11;
+                defaults=codec_config();
+                app.UI.Side(s)=struct('Kind',kind,'Mode',mode,'Rate',rate,'Checks',checks,'Temporal',temporal, ...
+                    'Advanced',advanced,'Policy',defaults.allocation,'Reservoir',defaults.reservoir,'Info',info);
             end
             app.UI.Axes=uiaxes(grid); title(app.UI.Axes,'Load a comparison to see the aligned waveforms');
             xlabel(app.UI.Axes,'Time (s)'); ylabel(app.UI.Axes,'Amplitude');
@@ -185,13 +240,35 @@ classdef ListeningApp < handle
             for k=1:6, cfg.features.(names{k})=controls.Checks(k).Value; end
             cfg.pam.temporal.postMasking=ismember(controls.Temporal.Value,{'Post + pre-echo','Post only'});
             cfg.pam.temporal.preEchoControl=ismember(controls.Temporal.Value,{'Post + pre-echo','Pre-echo only'});
+            cfg.allocation=controls.Policy; cfg.reservoir=controls.Reservoir;
+            if strcmp(cfg.rateMode,'vbr'), cfg.reservoir.enabled=false; end
+        end
+        function applyAllocation(app,side)
+            d=app.UI.Dialog; cfg=app.selectedConfig(side);
+            cfg.allocation.enabled=d.Enabled.Value;
+            for k=1:3
+                cfg.allocation.boundariesDB(k)=d.Boundary(k).Value;
+                cfg.allocation.savedNumerator(k)=d.Numerator(k).Value;
+                cfg.allocation.savedDenominator(k)=d.Denominator(k).Value;
+            end
+            cfg.allocation.stopDB=d.Final.Value; cfg.reservoir.enabled=d.Bucket.Value;
+            cfg.reservoir.capacityFrames=d.Capacity.Value; cfg.reservoir.targetDB=d.Target.Value;
+            try
+                pac.validate_config(cfg);
+            catch exception
+                d.Message.Text=exception.message; return
+            end
+            app.UI.Side(side).Policy=cfg.allocation;
+            if strcmp(cfg.rateMode,'cbr'), app.UI.Side(side).Reservoir=cfg.reservoir; end
+            delete(d.Figure); app.markDirty();
         end
         function modeChanged(app,side)
             controls=app.UI.Side(side);
             if strcmp(controls.Mode.Value,'Variable bitrate')
                 controls.Rate.ItemsData=[];
-                controls.Rate.Items={'Higher quality (-6 dB)','Standard (0 dB)','Smaller file (+6 dB)'};
-                controls.Rate.ItemsData=[-6 0 6]; controls.Rate.Value=0;
+                controls.Rate.Items={'Higher quality (-6 dB)','Standard (0 dB)','Smaller file (+6 dB)', ...
+                    'Smaller file (+9 dB)','Smallest file (+12 dB)'};
+                controls.Rate.ItemsData=[-6 0 6 9 12]; controls.Rate.Value=0;
             else
                 controls.Rate.ItemsData=[];
                 controls.Rate.Items={'64 kb/s','96 kb/s','128 kb/s'};
@@ -219,6 +296,10 @@ classdef ListeningApp < handle
                 controls=app.UI.Side(s); controls.Kind.Enable=app.onOff(~app.Busy);
                 encoded=strcmp(controls.Kind.Value,'Encoded') && ~app.Busy;
                 controls.Rate.Enable=app.onOff(encoded);
+                controls.Advanced.Enable=app.onOff(encoded);
+                if strcmp(controls.Mode.Value,'Variable bitrate') && controls.Policy.enabled
+                    controls.Rate.Enable='off';
+                end
                 controls.Mode.Enable=app.onOff(encoded);
                 for k=1:6, controls.Checks(k).Enable=app.onOff(encoded); end
                 controls.Temporal.Enable=app.onOff(encoded && controls.Checks(2).Value);

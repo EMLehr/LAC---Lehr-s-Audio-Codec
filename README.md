@@ -25,6 +25,8 @@ Switch A/B at the same playback position, seek, loop a chosen region, adjust sha
 
 Each encoded side also offers **Fixed bitrate / Variable bitrate**. VBR selects a quality target instead of a bitrate; the GUI shows the resulting actual bitrate and percentage size reduction. See [docs/VARIABLE_BITRATE.md](docs/VARIABLE_BITRATE.md) for its interpretation, results, and reproduction commands. Fixed bitrate remains the default for the assignment.
 
+VBR presets now include **+9 and +12 dB**. The **Piecewise saving / bit bucket...** button opens three editable NMR boundaries and **x in y bits saved** ratios, including the lowest layer. Piecewise allocation works with either rate mode. The optional capped bit bucket carries unused fixed-rate capacity to later frames. Both options default off; see [docs/PIECEWISE_ALLOCATION.md](docs/PIECEWISE_ALLOCATION.md) for controls, accounting, experiments, and limitations.
+
 ## Prepare the source audio
 
 Download the originals from the [QOA SQAM sample collection](https://qoaformat.org/samples/), following the [EBU usage terms](https://qc.ebu.io/testmaterials/523/):
@@ -144,7 +146,7 @@ Either switch works alone or with any PAM configuration. Huffman coding lossless
 
 Bandwidth extension directly codes the lower 12 kHz, then reconstructs the upper half from mirrored decoded coefficients with transmitted energy envelopes and noise fractions. This is a lossy SBR-inspired experiment, not standards-compliant SBR. The required 2048/1024 MDCT dimensions and 48 kHz output are preserved.
 
-Both options use explicit flags in version-2 `.lac` files. The decoder detects the format and supports both versions. With both switches off, the encoder still produces byte-identical version-1 output.
+Both options use explicit flags in version-2 `.lac` files under the original fixed-rate allocator. The decoder detects all four supported format versions. With both coding switches and the new allocation controls off in fixed-rate mode, the encoder still produces byte-identical version-1 output.
 
 After stage 7 encoding:
 
@@ -170,6 +172,7 @@ Stage 8 compares neither tool, Huffman only, BWE only, and both, with baseline P
 | `outputs/coding_features/` | Separate baseline-PAM/all-PAM comparisons of Huffman and BWE, 48 encoded/decoded pairs, byte regressions, measurements, and reconstructed-spectrum plot |
 | `outputs/listening/` | On-demand encoded/decoded comparison cache, saved listening notes, GUI verification, and preview |
 | `outputs/vbr/` | Quality-target VBR comparisons, actual compression percentages, reconstructed WAVs, target diagnostics, and frame-rate plot |
+| `outputs/allocation/` | Piecewise/bucket comparisons, fresh-process decoded WAVs, measurements, and bucket-balance plot |
 
 Reconstructed WAVs use 32-bit IEEE float samples. This preserves playback levels and overshoots without clipping or normalizing them; the 768 kb/s compression reference is still **48 kHz mono 16-bit PCM**. The WAV writer's output is checked against MATLAB `audioread`.
 

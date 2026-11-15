@@ -21,8 +21,12 @@ In `listening_gui`, each encoded side now has a **Fixed bitrate / Variable bitra
 | Higher quality | -6 dB | Approximately one-quarter of the selected PAM's band allowance |
 | Standard | 0 dB | The selected PAM's band allowance |
 | Smaller file | +6 dB | Approximately four times the selected PAM's band allowance |
+| Smaller file | +9 dB | Approximately eight times the selected PAM's band allowance |
+| Smallest file | +12 dB | Approximately sixteen times the selected PAM's band allowance |
 
 The API accepts -30 through +30 dB. Lower settings demand less quantization error. These are model-relative targets, not calibrated perceptual quality scores or guarantees of transparency. A and B can mix CBR and VBR or use different VBR presets. Both modes display actual bitrate, binary size, and percentage size reduction. The cache key and saved notes include the mode and quality setting.
+
+Optional **piecewise bit saving** replaces this ordinary quality-target allocation and disables the GUI's preset selector while enabled. It uses three NMR boundaries, three editable saving ratios, and a finite refinement budget defined by a final NMR limit. Reserved bits are omitted from VBR output. Its final limit is not a guaranteed achieved target. See [PIECEWISE_ALLOCATION.md](PIECEWISE_ALLOCATION.md); the separate bit bucket is available in fixed-rate mode only. The allocation discussion below describes ordinary VBR with piecewise saving disabled.
 
 Existing MATLAB windows keep their already loaded app instances. Open a fresh listening GUI to use the new controls; a new window is titled `LAC Listening Lab - CBR / VBR`.
 
@@ -52,7 +56,7 @@ size reduction (%) = 100 * (1 - total file bytes / (2 * original sample count))
 
 The reference is 48 kHz mono 16-bit PCM, or 768 kb/s. Negative size reduction is possible when a very short file's mandatory overhead exceeds its PCM size. Unlike CBR, VBR can encode even a one-sample input because it does not have to fit a duration-derived target budget.
 
-Fixed-rate files remain version 1 or 2 and preserve their bytes. The decoder supports all three versions; older decoders reject version 3 rather than misinterpreting it. No codec feature is silently enabled by selecting VBR.
+Fixed-rate files without the optional bucket remain version 1 or 2 and preserve their bytes. Bucket mode uses version 4. The decoder supports all four versions; older decoders reject unknown versions rather than misinterpreting them. No codec feature is silently enabled by selecting VBR.
 
 ## Why PAM switches now change size
 

@@ -6,6 +6,9 @@ cfg.windowLength = 2048;
 cfg.targetKbps = 96;
 cfg.rateMode = 'cbr'; % Fixed total-file bitrate remains the assignment baseline.
 cfg.vbr.distortionDB = 0; % VBR allowance multiplier = 10^(dB/10); lower is stricter.
+cfg.allocation=struct('enabled',false,'boundariesDB',[-6 -9 -15], ...
+    'savedNumerator',[1 1 1],'savedDenominator',[4 2 1],'stopDB',-24);
+cfg.reservoir=struct('enabled',false,'capacityFrames',8,'targetDB',0);
 cfg.pam.referenceSPL = 96; % Assumed SPL for digital mean-square power = 1.
 cfg.pam.maskingOffsetDB = 29;
 cfg.pam.lowerSlope = 30; % dB/Bark, approaching a masker from below.
