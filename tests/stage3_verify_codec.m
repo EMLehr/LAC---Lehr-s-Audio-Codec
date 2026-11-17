@@ -1,6 +1,6 @@
 function report = stage3_verify_codec()
 %STAGE3_VERIFY_CODEC Synthetic bitstream, allocation, and rate-control tests.
-root=fileparts(mfilename('fullpath'));
+root=pac.project_root();
 out=fullfile(root,'outputs','validation');
 if ~isfolder(out), mkdir(out); end
 rng(2718,'twister');

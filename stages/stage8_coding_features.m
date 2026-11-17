@@ -3,7 +3,7 @@ function stage8_coding_features(action)
 arguments
     action (1,:) char {mustBeMember(action,{'encode','decode','evaluate'})}
 end
-root=fileparts(mfilename('fullpath')); ids={'harpsichord','castanets'};
+root=pac.project_root(); ids={'harpsichord','castanets'};
 groups={'baseline_pam','all_pam'};
 for group=1:2
     pamMask=15*(group-1); out=fullfile(root,'outputs','coding_features',groups{group});

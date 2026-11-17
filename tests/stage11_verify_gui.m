@@ -1,6 +1,6 @@
 function report=stage11_verify_gui()
 %STAGE11_VERIFY_GUI Editable ratios, independent policies, and +9/+12 presets.
-root=fileparts(mfilename('fullpath')); app=listening_gui(); guard=onCleanup(@() app.close());
+root=pac.project_root(); app=listening_gui(); guard=onCleanup(@() app.close());
 test=matlab.uitest.TestCase.forInteractiveUse;
 test.choose(app.UI.Side(2).Mode,'Variable bitrate');
 test.choose(app.UI.Side(2).Rate,'Smaller file (+9 dB)'); test.press(app.UI.Load);

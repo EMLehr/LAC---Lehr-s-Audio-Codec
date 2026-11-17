@@ -4,7 +4,7 @@ function stage5_temporal(action)
 arguments
     action (1,:) char {mustBeMember(action,{'encode','decode','evaluate'})}
 end
-root=fileparts(mfilename('fullpath'));
+root=pac.project_root();
 out=fullfile(root,'outputs','temporal');
 if ~isfolder(out), mkdir(out); end
 ids={'harpsichord','castanets'};

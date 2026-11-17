@@ -38,7 +38,7 @@ assert(isequal(a0,aoff) && isequal(T0,Toff));
 
 fs=48000; n=(0:12287)'; x=.35*sin(2*pi*997*n/fs)+.025*randn(size(n));
 x(1:2500)=0; x(7000:7200)=x(7000:7200)+.2;
-out=fullfile(fileparts(mfilename('fullpath')),'outputs','validation');
+out=fullfile(pac.project_root(),'outputs','validation');
 if ~isfolder(out), mkdir(out); end
 input=fullfile(out,'all_pam_mixture.mat'); save(input,'x','fs');
 X=pac.analyze(x); exact=0;

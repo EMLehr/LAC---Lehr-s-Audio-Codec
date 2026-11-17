@@ -40,7 +40,7 @@ All required rates are exact for ten-second files because their budgets are inte
 5. `stage4_decode_baseline`: invoked in a separate MATLAB process after encoding; reads encoded `.lac` files, not prepared inputs or encoder diagnostic files.
 6. `stage4_evaluate_baseline`: objective measurements and an identified baseline masking plot generated.
 
-Machine-readable validation and measurements are in the local ignored outputs/ directory and can be regenerated with README commands. The masking example uses harpsichord frame 95, centered at approximately 2.0053 seconds. The plot includes the input MDCT spectrum, baseline global threshold, and threshold in quiet. An improved-PAM curve will be added once an improvement exists.
+Machine-readable validation and measurements are in the local ignored outputs/ directory and can be regenerated with the [baseline workflow commands](WORKFLOWS.md). The masking example uses harpsichord frame 95, centered at approximately 2.0053 seconds. The plot includes the input MDCT spectrum, baseline global threshold, and threshold in quiet. Later feature documents contain the improved-PAM comparisons.
 
 ## Remaining work
 

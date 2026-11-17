@@ -1,7 +1,7 @@
 function report=stage9_verify_listening(testAudio)
 %STAGE9_VERIFY_LISTENING UI, cache, alignment, and optional muted audio checks.
 if nargin<1, testAudio=false; end
-root=fileparts(mfilename('fullpath')); app=listening_gui();
+root=pac.project_root(); app=listening_gui();
 guard=onCleanup(@() app.close());
 test=matlab.uitest.TestCase.forInteractiveUse;
 assert(~app.Dirty && app.Data{1}.original && ~app.Data{2}.original);

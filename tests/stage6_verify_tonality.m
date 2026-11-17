@@ -54,7 +54,7 @@ equal.pam.tonal.noiseOffsetDB=29;
 assert(max(abs(ae-ab),[],'all')<1e-12 && max(abs(Te-Tb),[],'all')<1e-12);
 
 % Both new mode combinations round-trip through the existing binary decoder.
-out=fullfile(fileparts(mfilename('fullpath')),'outputs','validation');
+out=fullfile(pac.project_root(),'outputs','validation');
 if ~isfolder(out), mkdir(out); end
 x=0.4*sin(2*pi*997*n/fs)+0.03*randn(size(n)); x(1:3000)=0;
 input=fullfile(out,'tonality_mixture.mat'); save(input,'x','fs');

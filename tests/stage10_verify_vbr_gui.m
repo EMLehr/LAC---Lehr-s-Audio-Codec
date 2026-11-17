@@ -1,6 +1,6 @@
 function report=stage10_verify_vbr_gui()
 %STAGE10_VERIFY_VBR_GUI Independent rate modes, quality presets, and percentages.
-root=fileparts(mfilename('fullpath')); app=listening_gui(); guard=onCleanup(@() app.close());
+root=pac.project_root(); app=listening_gui(); guard=onCleanup(@() app.close());
 test=matlab.uitest.TestCase.forInteractiveUse;
 test.choose(app.UI.Side(1).Kind,'Encoded'); test.choose(app.UI.Side(1).Rate,'64 kb/s');
 test.choose(app.UI.Side(2).Mode,'Variable bitrate');

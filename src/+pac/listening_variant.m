@@ -13,10 +13,11 @@ pac.validate_config(cfg);
 % do not invalidate audio; a source/codec/configuration change always does.
 digest=java.security.MessageDigest.getInstance('SHA-256');
 add(typecast(x(:),'uint8')); add(unicode2native(jsonencode(cfg),'UTF-8'));
-files=[dir(fullfile(root,'+pac','*.m'));dir(fullfile(root,'codec_config.m')); ...
-    dir(fullfile(root,'encode_audio.m'));dir(fullfile(root,'decode_audio.m'))];
+sourceDir=fullfile(root,'src');
+files=[dir(fullfile(sourceDir,'+pac','*.m'));dir(fullfile(sourceDir,'codec_config.m')); ...
+    dir(fullfile(sourceDir,'encode_audio.m'));dir(fullfile(sourceDir,'decode_audio.m'))];
 for k=1:numel(files)
-    if startsWith(files(k).name,'listening_') || strcmp(files(k).name,'ListeningApp.m'), continue; end
+    if startsWith(files(k).name,'listening_') || ismember(files(k).name,{'ListeningApp.m','project_root.m'}), continue; end
     add(unicode2native(files(k).name,'UTF-8'));
     add(unicode2native(fileread(fullfile(files(k).folder,files(k).name)),'UTF-8'));
 end

@@ -1,6 +1,6 @@
 function report = stage8_verify_coding()
 %STAGE8_VERIFY_CODING Huffman exactness, BWE parameters, format, combinations.
-root=fileparts(mfilename('fullpath')); out=fullfile(root,'outputs','validation');
+root=pac.project_root(); out=fullfile(root,'outputs','validation');
 if ~isfolder(out), mkdir(out); end
 rng(8001,'twister'); bands=pac.bands(); B=numel(bands.count);
 book=pac.huffman_book();

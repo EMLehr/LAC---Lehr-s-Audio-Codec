@@ -69,11 +69,11 @@ Huffman can now reduce the actual file size because entropy savings are no longe
 After the earlier prepared inputs and stage 8 development encodes exist:
 
 ```text
-matlab -batch "stage10_verify_vbr;"
-matlab -batch "stage10_vbr('encode');"
-matlab -batch "stage10_vbr('decode');"
-matlab -batch "stage10_vbr('evaluate');"
-matlab -batch "stage10_verify_vbr_gui;"
+matlab -batch "lac_setup; stage10_verify_vbr;"
+matlab -batch "lac_setup; stage10_vbr('encode');"
+matlab -batch "lac_setup; stage10_vbr('decode');"
+matlab -batch "lac_setup; stage10_vbr('evaluate');"
+matlab -batch "lac_setup; stage10_verify_vbr_gui;"
 ```
 
 The development stage covers 12 configurations, three targets, and the two development excerpts: 72 encoded/decoded pairs. Configurations include baseline, each PAM option alone, all four PAM options, and the optional coding-tool combinations with baseline/all-four PAM. Results are in `outputs/vbr/`; speech remains held out. The GUI can generate other combinations on demand.

@@ -3,7 +3,7 @@ function stage12_experiments(action)
 arguments
     action (1,:) char {mustBeMember(action,{'encode','decode','evaluate'})}
 end
-root=fileparts(mfilename('fullpath')); out=fullfile(root,'outputs','experiments');
+root=pac.project_root(); out=fullfile(root,'outputs','experiments');
 if ~isfolder(out), mkdir(out); end
 options={'zeroRun','fileHuffman','smartQuantizer','perceptualEntropy','variableWindows'};
 switch action

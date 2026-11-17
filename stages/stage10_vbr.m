@@ -3,7 +3,7 @@ function stage10_vbr(action)
 arguments
     action (1,:) char {mustBeMember(action,{'encode','decode','evaluate'})}
 end
-root=fileparts(mfilename('fullpath')); out=fullfile(root,'outputs','vbr');
+root=pac.project_root(); out=fullfile(root,'outputs','vbr');
 if ~isfolder(out), mkdir(out); end
 recipes=[0 0;1 0;2 0;4 0;8 0;15 0;0 1;0 2;0 3;15 1;15 2;15 3];
 switch action

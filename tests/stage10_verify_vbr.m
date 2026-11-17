@@ -1,6 +1,6 @@
 function report=stage10_verify_vbr()
 %STAGE10_VERIFY_VBR Quality allocation, variable framing, backward compatibility.
-root=fileparts(mfilename('fullpath')); out=fullfile(root,'outputs','validation','vbr');
+root=pac.project_root(); out=fullfile(root,'outputs','validation','vbr');
 if ~isfolder(out), mkdir(out); end
 rng(10001,'twister'); fs=48000; n=(0:12344)';
 x=.12*randn(size(n))+.2*sin(2*pi*997*n/fs); x(1:3500)=0; x(end)=-.8;

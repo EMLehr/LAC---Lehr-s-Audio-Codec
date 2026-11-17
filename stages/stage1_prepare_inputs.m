@@ -1,6 +1,6 @@
 function manifest = stage1_prepare_inputs(outputDir)
 %STAGE1_PREPARE_INPUTS Prepare once; MAT doubles are authoritative inputs.
-root = fileparts(mfilename('fullpath'));
+root = pac.project_root();
 if nargin < 1, outputDir = fullfile(root,'outputs','prepared'); end
 if ~isfolder(outputDir), mkdir(outputDir); end
 assert(exist('resample','file')==2,'pac:Dependency', ...

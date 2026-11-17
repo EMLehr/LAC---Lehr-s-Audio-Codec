@@ -1,6 +1,6 @@
 function summary = stage4_decode_baseline()
 %STAGE4_DECODE_BASELINE Run in a fresh MATLAB process; only .lac files are read.
-root=fileparts(mfilename('fullpath'));
+root=pac.project_root();
 out=fullfile(root,'outputs','baseline');
 files=dir(fullfile(out,'*.lac'));
 assert(~isempty(files),'pac:Input','Run stage4_encode_baseline first.');

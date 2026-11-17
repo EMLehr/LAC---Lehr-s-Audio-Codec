@@ -3,7 +3,7 @@ function stage11_allocation(action)
 arguments
     action (1,:) char {mustBeMember(action,{'encode','decode','evaluate'})}
 end
-root=fileparts(mfilename('fullpath')); out=fullfile(root,'outputs','allocation');
+root=pac.project_root(); out=fullfile(root,'outputs','allocation');
 if ~isfolder(out), mkdir(out); end
 switch action
     case 'encode'

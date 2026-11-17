@@ -3,7 +3,7 @@ function stage6_tonality(action)
 arguments
     action (1,:) char {mustBeMember(action,{'encode','decode','evaluate'})}
 end
-root=fileparts(mfilename('fullpath')); out=fullfile(root,'outputs','tonality');
+root=pac.project_root(); out=fullfile(root,'outputs','tonality');
 if ~isfolder(out), mkdir(out); end
 ids={'harpsichord','castanets'};
 modes={'baseline','temporal','tonal','tonal_temporal'};

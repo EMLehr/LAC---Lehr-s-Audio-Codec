@@ -21,7 +21,7 @@ for L = lengths
         if t == 1, results=row; else, results(t)=row; end
     end
 end
-out = fullfile(fileparts(mfilename('fullpath')),'outputs','validation');
+out = fullfile(pac.project_root(),'outputs','validation');
 if ~isfolder(out), mkdir(out); end
 pac.write_json(fullfile(out,'transform.json'),results);
 fprintf('PASS: %d transform cases; worst absolute error %.3g\n',t,max([results.maxError]));

@@ -3,7 +3,7 @@ function report = stage5_verify_temporal()
 cfg=codec_config(); cfg.features.temporalMasking=true;
 pac.validate_config(cfg);
 bands=pac.bands(); B=numel(bands.count);
-out=fullfile(fileparts(mfilename('fullpath')),'outputs','validation');
+out=fullfile(pac.project_root(),'outputs','validation');
 if ~isfolder(out), mkdir(out); end
 
 % Isolated mask history: a masker must affect the future, not the past.

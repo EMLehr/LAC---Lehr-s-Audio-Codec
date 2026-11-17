@@ -2,7 +2,7 @@ function results = stage4_evaluate_baseline(includeHeldOut)
 %STAGE4_EVALUATE_BASELINE Measurements and one baseline masking example.
 % Listening observations are deliberately left for actual listening sessions.
 if nargin<1, includeHeldOut=false; end
-root=fileparts(mfilename('fullpath'));
+root=pac.project_root();
 out=fullfile(root,'outputs','baseline');
 ids={'harpsichord','castanets'};
 if includeHeldOut, ids{end+1}='speech'; end

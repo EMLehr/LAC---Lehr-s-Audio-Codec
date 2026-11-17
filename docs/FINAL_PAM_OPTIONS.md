@@ -70,10 +70,10 @@ Run `decode_audio('outputs/example.lac','outputs/example_decoded.wav')` in a fre
 For the complete comparison, after stage 6 encoding:
 
 ```text
-matlab -batch "stage7_verify_pam;"
-matlab -batch "stage7_pam_options('encode');"
-matlab -batch "stage7_pam_options('decode');"
-matlab -batch "stage7_pam_options('evaluate');"
+matlab -batch "lac_setup; stage7_verify_pam;"
+matlab -batch "lac_setup; stage7_pam_options('encode');"
+matlab -batch "lac_setup; stage7_pam_options('decode');"
+matlab -batch "lac_setup; stage7_pam_options('evaluate');"
 ```
 
 `pac.pam_config(mask,rate)` enumerates masks 0 through 15, with bit values 1 = tonal, 2 = temporal, 4 = spreading, 8 = mapping. Mask 0 is baseline and mask 15 enables all four. Model names record the enabled options. The comparison covers two development excerpts, three rates, and all 16 combinations: 96 files. Results go to `outputs/pam_options/` and are excluded from Git.

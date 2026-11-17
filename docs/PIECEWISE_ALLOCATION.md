@@ -93,11 +93,11 @@ For bucket-only allocation, set `cfg.allocation.enabled=false` and `cfg.reservoi
 After prepared inputs, baseline outputs, and the earlier coding/VBR regression fixtures exist, run separate processes:
 
 ```text
-matlab -batch "stage11_verify_allocation;"
-matlab -batch "stage11_allocation('encode');"
-matlab -batch "stage11_allocation('decode');"
-matlab -batch "stage11_allocation('evaluate');"
-matlab -batch "stage11_verify_gui;"
+matlab -batch "lac_setup; stage11_verify_allocation;"
+matlab -batch "lac_setup; stage11_allocation('encode');"
+matlab -batch "lac_setup; stage11_allocation('decode');"
+matlab -batch "lac_setup; stage11_allocation('evaluate');"
+matlab -batch "lac_setup; stage11_verify_gui;"
 ```
 
 The comparison stage creates 34 files: two development clips, all three fixed rates with baseline/bucket/piecewise/both, plus five VBR conditions per clip (ordinary -24 dB, piecewise with full or partial bottom-layer saving, ordinary +9 and +12 dB). Speech remains held out. WAVs preserve level and alignment. Actual size counts every header, prefix, payload, and padding byte against the 768 kb/s PCM reference.

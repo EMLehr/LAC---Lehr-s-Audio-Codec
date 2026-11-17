@@ -1,6 +1,6 @@
 function report=stage12_verify_experiments()
 %STAGE12_VERIFY_EXPERIMENTS Reconstruction, exact symbols, all new switches.
-root=fileparts(mfilename('fullpath')); out=fullfile(root,'outputs','validation','experiments');
+root=pac.project_root(); out=fullfile(root,'outputs','validation','experiments');
 if ~isfolder(out), mkdir(out); end
 rng(12001,'twister'); worst=0; transformCases=0;
 for L=[1 17 1024 1025 4096 9001]

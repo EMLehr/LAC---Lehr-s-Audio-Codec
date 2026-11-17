@@ -1,6 +1,6 @@
 function stage12_verify_gui()
 %STAGE12_VERIFY_GUI New independent switches, numeric settings, and audition.
-root=fileparts(mfilename('fullpath')); app=listening_gui(); guard=onCleanup(@() app.close());
+root=pac.project_root(); app=listening_gui(); guard=onCleanup(@() app.close());
 test=matlab.uitest.TestCase.forInteractiveUse;
 test.press(app.UI.Side(2).ExperimentButton); d=app.UI.ExperimentDialog;
 assert(all(~[d.Checks.Value]));

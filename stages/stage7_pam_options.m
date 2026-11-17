@@ -4,7 +4,7 @@ function stage7_pam_options(action)
 arguments
     action (1,:) char {mustBeMember(action,{'encode','decode','evaluate'})}
 end
-root=fileparts(mfilename('fullpath')); out=fullfile(root,'outputs','pam_options');
+root=pac.project_root(); out=fullfile(root,'outputs','pam_options');
 if ~isfolder(out), mkdir(out); end
 ids={'harpsichord','castanets'}; modes=cell(1,16);
 for mask=0:15, modes{mask+1}=pac.model_name(pac.pam_config(mask)); end

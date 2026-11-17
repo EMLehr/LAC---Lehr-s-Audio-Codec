@@ -1,6 +1,6 @@
 function report=stage11_verify_allocation()
 %STAGE11_VERIFY_ALLOCATION Piecewise ratios, reservoir conservation, compatibility.
-root=fileparts(mfilename('fullpath')); out=fullfile(root,'outputs','validation','allocation');
+root=pac.project_root(); out=fullfile(root,'outputs','validation','allocation');
 if ~isfolder(out), mkdir(out); end
 cfg=codec_config(); p=cfg.allocation;
 assert(pac.saving_ratio(-5,p)==0 && pac.saving_ratio(-6,p)==.25);

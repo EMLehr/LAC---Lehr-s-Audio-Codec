@@ -86,7 +86,7 @@ This follows the long/start/eight-short/stop structure described in [Adaptive Wi
 
 ## Reproduction
 
-Run `stage12_verify_experiments`, then `stage12_experiments('encode')`, `'decode'`, and `'evaluate'` in separate MATLAB processes. The development stage covers baseline, each new option alone, optional local books, PE+windows, and all five, in CBR96 and VBR0 for harpsichord/castanets; four additional all-on/bucket/piecewise files cover CBR64/128. This is 40 files. Speech remains held out. `stage12_verify_gui` checks the UI and baseline restoration. Generated files and JSON/CSV diagnostics are under `outputs/experiments/`; structural fixtures are under `outputs/validation/experiments/`.
+Run `lac_setup` in each new MATLAB session, then `stage12_verify_experiments`, followed by `stage12_experiments('encode')`, `'decode'`, and `'evaluate'` in separate processes. See [copyable workflow commands](WORKFLOWS.md). The development stage covers baseline, each new option alone, optional local books, PE+windows, and all five, in CBR96 and VBR0 for harpsichord/castanets; four additional all-on/bucket/piecewise files cover CBR64/128. This is 40 files. Speech remains held out. `stage12_verify_gui` checks the UI and baseline restoration. Generated files and JSON/CSV diagnostics are under `outputs/experiments/`; structural fixtures are under `outputs/validation/experiments/`.
 
 No listening observations are synthesized by tests. Lower byte counts or pre-onset error do not establish a universal perceptual improvement. In particular, tests of VBR settings across different PAM/allocation/window choices are not matched-quality experiments. Use fixed-rate, PAM-only settings from the README for the assignment.
 

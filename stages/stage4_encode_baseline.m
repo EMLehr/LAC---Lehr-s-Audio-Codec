@@ -1,7 +1,7 @@
 function stage4_encode_baseline(includeHeldOut)
 %STAGE4_ENCODE_BASELINE Generate all development conditions; holdout is opt-in.
 if nargin<1, includeHeldOut=false; end
-root=fileparts(mfilename('fullpath'));
+root=pac.project_root();
 out=fullfile(root,'outputs','baseline');
 if ~isfolder(out), mkdir(out); end
 ids={'harpsichord','castanets'};
