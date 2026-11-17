@@ -45,7 +45,7 @@ All improvements default **off** and are independently selectable. Their effects
 | Per-file / per-window Huffman | Tests learned books, including their overhead, with fallback when they do not save space. | No |
 | Smarter quantizer | Tries more step sizes at each bit width to find better error/bit-cost choices. | No |
 | Perceptual entropy (PE) | Guides precision and transient detection with fixed or variable windows. | No |
-| Variable MDCT windows | Uses short transforms around attacks to limit pre-echo; changes the required transform dimensions. | **No — experimental** |
+| Variable MDCT windows | Uses short transforms around attacks to limit pre-echo; changes the required transform dimensions. | No |
 | Bandwidth extension | Reconstructs content above 12 kHz using lower-frequency content and shaping parameters. | No |
 | Variable bitrate (VBR) | Targets PAM-relative distortion instead of a fixed file bitrate. | No |
 | Piecewise bit saving | Reserves adjustable fractions of refinement bits across three noise-to-mask ratio ranges. | No |
