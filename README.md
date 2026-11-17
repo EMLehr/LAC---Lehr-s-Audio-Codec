@@ -14,6 +14,8 @@ listening_gui
 
 Choose an excerpt, configure A/B as original or encoded audio, and click **Load / generate comparison**. Play or switch sides at the same position. The GUI includes feature toggles, CBR/VBR controls, looping, actual bitrate, compression percentage, and saved listening notes. Missing versions are generated and cached.
 
+For your own audio, click **Open audio file...**, select a file, then **Load / generate comparison**. The full file is converted to 48 kHz mono for both sides, preserving levels and leaving the source untouched. Longer files take longer to encode; WAV or FLAC avoids prior lossy compression.
+
 **First-time setup:** place the three SQAM WAVs in the project root, then run `lac_setup; stage1_prepare_inputs`. See [input preparation](docs/WORKFLOWS.md#prepare-the-audio) for filenames and downloads. Open a fresh GUI window after updating the code.
 
 For command-line encoding and decoding:

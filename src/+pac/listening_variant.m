@@ -1,12 +1,18 @@
 function result = listening_variant(root,source,cfg,original)
 %LISTENING_VARIANT Load original or a content-keyed, independently decoded cache.
-assert(ismember(source,{'harpsichord','castanets','speech'}),'pac:Input','Unknown excerpt.');
-input=fullfile(root,'outputs','prepared',[source '.mat']);
-assert(isfile(input),'pac:Input','Prepared audio missing. Run stage1_prepare_inputs first.');
+custom=isstruct(source);
+if custom
+    metadata=source.metadata; input=source.input; source='custom';
+else
+    assert(ismember(source,{'harpsichord','castanets','speech'}),'pac:Input','Unknown excerpt.');
+    input=fullfile(root,'outputs','prepared',[source '.mat']);
+end
+assert(isfile(input),'pac:Input','Prepared audio missing. Import audio or run stage1_prepare_inputs.');
 [x,fs]=pac.read_input(input);
 result=struct('x',x,'fs',fs,'source',source,'model','original','path',input, ...
     'config',cfg,'original',original,'actualKbps',768,'bytes',2*numel(x),'cacheHit',false, ...
     'sizeReductionPercent',0,'rateMode','original');
+if custom, result.sourceMetadata=metadata; end
 if original, return; end
 pac.validate_config(cfg);
 % Hash samples, exact configuration, and codec implementation. GUI changes

@@ -19,6 +19,7 @@ classdef ListeningApp < handle
         Duration = 10
         Marker
         Closing = false
+        CustomSource = []
     end
     methods
         function app=ListeningApp(root)
@@ -31,9 +32,11 @@ classdef ListeningApp < handle
             drawnow;
             try
                 pair=cell(1,2);
+                source=app.UI.Source.Value;
+                if strcmp(source,'custom'), source=app.CustomSource; end
                 for side=1:2
                     cfg=app.selectedConfig(side);
-                    pair{side}=pac.listening_variant(app.Root,app.UI.Source.Value,cfg, ...
+                    pair{side}=pac.listening_variant(app.Root,source,cfg, ...
                         strcmp(app.UI.Side(side).Kind.Value,'Original'));
                 end
                 app.Data=pair; app.Duration=numel(pair{1}.x)/pair{1}.fs;
@@ -66,6 +69,31 @@ classdef ListeningApp < handle
                 app.UI.Status.Text='Ready. Select A or B, then Play. Switching preserves the playback position.';
             catch exception
                 app.UI.Status.Text=['Could not load: ' exception.message];
+            end
+            app.Busy=false; app.refreshControls();
+        end
+        function importFile(app,path)
+            if app.Busy, return; end
+            if nargin<2
+                [name,folder]=uigetfile({'*.wav;*.flac;*.mp3;*.m4a;*.ogg;*.aif;*.aiff','Audio files'; ...
+                    '*.*','All files'},'Choose audio for comparison');
+                if isequal(name,0), return; end
+                path=fullfile(folder,name);
+            end
+            app.stopPlayback(true); app.Busy=true; app.refreshControls();
+            app.UI.Status.Text='Preparing your audio at 48 kHz mono...'; drawnow;
+            try
+                source=pac.listening_import(app.Root,path);
+                app.CustomSource=source;
+                app.UI.Source.ItemsData={};
+                app.UI.Source.Items={'Harpsichord','Castanets','Speech (final test)', ...
+                    ['Custom: ' source.metadata.filename]};
+                app.UI.Source.ItemsData={'harpsichord','castanets','speech','custom'};
+                app.UI.Source.Value='custom';
+                app.markDirty();
+                app.UI.Status.Text='Audio imported. Choose A/B settings, then Load / generate comparison.';
+            catch exception
+                app.UI.Status.Text=['Could not import: ' exception.message];
             end
             app.Busy=false; app.refreshControls();
         end
@@ -196,10 +224,12 @@ classdef ListeningApp < handle
             uilabel(header,'Text','LAC Listening Lab','FontSize',26,'FontWeight','bold');
             uilabel(header,'Text','Original vs codec, or codec vs codec. One shared playback level.', ...
                 'HorizontalAlignment','right','FontColor',[.3 .35 .4]);
-            top=uigridlayout(grid,[1 4],'ColumnWidth',{55,230,200,'1x'},'Padding',0);
-            uilabel(top,'Text','Excerpt');
+            top=uigridlayout(grid,[1 5],'ColumnWidth',{45,210,125,200,'1x'},'Padding',0);
+            uilabel(top,'Text','Source');
             app.UI.Source=uidropdown(top,'Items',{'Harpsichord','Castanets','Speech (final test)'}, ...
                 'ItemsData',{'harpsichord','castanets','speech'},'ValueChangedFcn',@(~,~) app.markDirty());
+            app.UI.Import=uibutton(top,'Text','Open audio file...', ...
+                'ButtonPushedFcn',@(~,~) app.importFile());
             app.UI.Load=uibutton(top,'Text','Load / generate comparison','ButtonPushedFcn',@(~,~) app.loadComparison());
             app.UI.SourceNote=uilabel(top,'Text','Development excerpt. Speech stays reserved until selected.', ...
                 'FontSize',11,'WordWrap','on');
@@ -334,6 +364,9 @@ classdef ListeningApp < handle
             app.UI.Status.Text='Selections changed. Load / generate comparison to apply them.';
             if strcmp(app.UI.Source.Value,'speech')
                 app.UI.SourceNote.Text='Final-test speech: load only after choosing your PAM changes.';
+            elseif strcmp(app.UI.Source.Value,'custom')
+                app.UI.SourceNote.Text=sprintf('Your audio: %.2f s | prepared at 48 kHz mono | full file', ...
+                    app.CustomSource.metadata.durationSeconds);
             else
                 app.UI.SourceNote.Text='Development excerpt. Speech stays reserved until selected.';
             end
@@ -345,6 +378,7 @@ classdef ListeningApp < handle
                 c.Enable=app.onOff(ready);
             end
             app.UI.Load.Enable=app.onOff(~app.Busy); app.UI.Source.Enable=app.onOff(~app.Busy);
+            app.UI.Import.Enable=app.onOff(~app.Busy);
             for s=1:2
                 controls=app.UI.Side(s); controls.Kind.Enable=app.onOff(~app.Busy);
                 encoded=strcmp(controls.Kind.Value,'Encoded') && ~app.Busy;
